@@ -12,3 +12,6 @@ async def app_life_span(app: FastAPI):
 app = FastAPI(lifespan=app_life_span)
 
 app.include_router(timer.router)
+app.include_router(calendar.router)
+app.include_router(ai_service.router)
+app.include_router(user.router)
