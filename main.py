@@ -5,9 +5,10 @@ import ai_service, calendar, db, timer, user
 
 @asynccontextmanager
 async def app_life_span(app: FastAPI):
-    async with db.engine.begin() as conn:                  # 종료하면 자동으로 닫힌다.
-        await conn.run_sync(db.Base.metadata.create_all)   # 동기 실행 ==> 비동기 실행.
-    yield    
+    # 비동기 엔진으로 테이블을 생성하는 올바른 방법입니다
+    async with db.engine.begin() as conn:
+        await conn.run_sync(db.Base.metadata.create_all)
+    yield
 
 app = FastAPI(lifespan=app_life_span)
 
