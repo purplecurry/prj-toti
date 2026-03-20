@@ -1,7 +1,10 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, Request
+from fastapi.responses import RedirectResponse
 from contextlib import asynccontextmanager
+from fastapi.templating import Jinja2Templates
 import ai_service, calendar, db, timer, user
 
+templates = Jinja2Templates(directory="templates")
 
 @asynccontextmanager
 async def app_life_span(app: FastAPI):
@@ -15,3 +18,7 @@ app.include_router(timer.router)
 app.include_router(calendar.router)
 app.include_router(ai_service.router)
 app.include_router(user.router)
+
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/timer")
