@@ -7,7 +7,7 @@ from datetime import date
 import user
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from db import get_db_session, users
+from db import get_db, users
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -29,5 +29,5 @@ async def timer(request:Request, current_user=Depends(get_current_user),db: Asyn
     return templates.TemplateResponse("timer.html", {"request":request, "focus_time":focust_time, "break_time":break_time,})
 
 @router.get("/timer/memo")
-async def read_memo(request:Request, db: AsyncSession=Depends(get_db_session)):
+async def read_memo(request:Request, db: AsyncSession=Depends(get_db)):
     
