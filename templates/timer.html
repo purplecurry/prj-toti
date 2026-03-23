@@ -4,130 +4,342 @@
   <meta charset="UTF-8">
   <title>Pomodoro Timer</title>
   <style>
-    body { font-family: 'Noto Sans KR', sans-serif; text-align: center; }
-    .timer-display { font-size: 2rem; margin: 1rem; }
-    .control-btn { font-size: 1.5rem; padding: 0.5rem 1rem; margin: 0.5rem; }
-    .play { background: #28a745; color: white; }
-    .stop { background: #dc3545; color: white; }
-    input { width: 50px; text-align: center; }
+    body { font-family: 'Noto Sans KR', sans-serif; margin:0; }
+    .layout { display:flex; height:100vh; }
+    #memo-container { width:30%; padding:1rem; border-right:1px solid #ccc; text-align:left; }
+    #memo-container h2 { margin:0; }
+    .memo-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+    .memo-box { border:1px solid #333; margin:0.5rem 0; padding:0.5rem; }
+    .memo-title-row { display:flex; justify-content:space-between; align-items:center;
+                      border-bottom:1px solid #aaa; padding-bottom:0.5rem; cursor:pointer; }
+    .memo-title-row span { font-weight:bold; }
+    .memo-icons span { margin-left:0.5rem; cursor:pointer; }
+    .memo-content { display:none; margin-top:0.5rem; }
+    .timer-area { flex:1; text-align:center; padding:2rem; }
+    .timer-display { font-size:2rem; margin:1rem; }
+    .control-btn { font-size:1.5rem; padding:0.5rem 1rem; margin:0.5rem; }
+    .play { background:#28a745; color:white; }
+    .stop { background:#dc3545; color:white; }
+    input { width:50px; text-align:center; }
   </style>
 </head>
 <body>
-  <h1>Pomodoro Timer</h1>
-  <div class="timer-display" id="main-timer">25:00</div>
+  <div class="layout">
+    <!-- 메모 영역 -->
+    <div id="memo-container">
+      <div class="memo-header">
+        <h2>메모</h2>
+        <button id="add-memo-btn" style="font-size:1.2rem; padding:0.3rem 0.6rem;">+</button>
+      </div>
+      <!-- 메모 박스들이 JS로 추가됨 -->
+    </div>
 
-  <div>
-    집중 시간: <input id="focus-input" type="number" value="25"> 분
+    <!-- 타이머 영역 -->
+    <div class="timer-area">
+      <h1>Pomodoro Timer</h1>
+      <div class="timer-display" id="main-timer">25:00</div>
+
+      <div>집중 시간: <input id="focus-input" type="number" value="25"> 분</div>
+      <div>휴식 시간: <input id="break-input" type="number" value="5"> 분</div>
+      <div>목표 횟수: <input id="goal-input" type="number" value="4"> 회</div>
+      <div>현재 횟수: <span id="count">0</span></div>
+
+      <button id="play-btn" class="control-btn play">▶</button>
+      <button id="stop-btn" class="control-btn stop">■</button>
+    </div>
   </div>
-  <div>
-    휴식 시간: <input id="break-input" type="number" value="5"> 분
-  </div>
-  <div>
-    목표 횟수: <input id="goal-input" type="number" value="4"> 회
-  </div>
-  <div>
-    현재 횟수: <span id="count">0</span>
-  </div>
 
-  <button id="play-btn" class="control-btn play">▶</button>
-  <button id="stop-btn" class="control-btn stop">■</button>
+<script>
+  const playBtn = document.getElementById("play-btn");
+  const stopBtn = document.getElementById("stop-btn");
+  const mainTimer = document.getElementById("main-timer");
+  const focusInput = document.getElementById("focus-input");
+  const breakInput = document.getElementById("break-input");
+  const goalInput = document.getElementById("goal-input");
+  const countEl = document.getElementById("count");
 
-  <script>
-    const playBtn = document.getElementById("play-btn");
-    const stopBtn = document.getElementById("stop-btn");
-    const mainTimer = document.getElementById("main-timer");
-    const focusInput = document.getElementById("focus-input");
-    const breakInput = document.getElementById("break-input");
-    const goalInput = document.getElementById("goal-input");
-    const countEl = document.getElementById("count");
+  let running = false;
+  let interval = null;
+  let isFocus = true;
+  let focusTime = parseInt(focusInput.value) * 60;
+  let breakTime = parseInt(breakInput.value) * 60;
+  let timeLeft = focusTime;
+  let count = 0;
+  let goal = parseInt(goalInput.value);
 
-    let running = false;
-    let interval = null;
-    let isFocus = true;
-    let focusTime = parseInt(focusInput.value) * 60;
-    let breakTime = parseInt(breakInput.value) * 60;
-    let timeLeft = focusTime;
-    let count = 0;
-    let goal = parseInt(goalInput.value);
+  function updateDisplay() {
+    const minutes = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+    const seconds = String(timeLeft % 60).padStart(2, "0");
+    mainTimer.textContent = `${minutes}:${seconds}`;
+  }
 
-    function updateDisplay() {
-      const minutes = String(Math.floor(timeLeft / 60)).padStart(2, "0");
-      const seconds = String(timeLeft % 60).padStart(2, "0");
-      mainTimer.textContent = `${minutes}:${seconds}`;
-    }
+  function switchPhase() {
+    if (isFocus) {
+      isFocus = false;
+      breakTime = parseInt(breakInput.value) * 60;
+      timeLeft = breakTime;
+      alert("집중 시간 종료! 휴식 시작!");
+    } else {
+      isFocus = true;
+      focusTime = parseInt(focusInput.value) * 60;
+      timeLeft = focusTime;
+      count++;
+      countEl.textContent = count;
 
-    function switchPhase() {
-      if (isFocus) {
-        // 집중 끝 → 휴식 시작
-        isFocus = false;
-        breakTime = parseInt(breakInput.value) * 60;
-        timeLeft = breakTime;
-        alert("집중 시간 종료! 휴식 시작!");
-      } else {
-        // 휴식 끝 → 집중 시작
-        isFocus = true;
-        focusTime = parseInt(focusInput.value) * 60;
-        timeLeft = focusTime;
-        count++;
-        countEl.textContent = count;
-
-        if (count >= goal) {
-          clearInterval(interval);
-          running = false;
-          alert("목표 횟수 달성! 오늘의 뽀모도로 완료!");
-          playBtn.textContent = "▶";
-          playBtn.classList.remove("stop");
-          playBtn.classList.add("play");
-          return;
-        }
-        alert("휴식 종료! 다시 집중 시작!");
-      }
-      updateDisplay();
-    }
-
-    playBtn.addEventListener("click", () => {
-      if (!running) {
-        running = true;
-        playBtn.textContent = "⏸";
-        playBtn.classList.remove("play");
-        playBtn.classList.add("stop");
-
-        interval = setInterval(() => {
-          if (timeLeft > 0) {
-            timeLeft--;
-            updateDisplay();
-          } else {
-            switchPhase();
-          }
-        }, 1000);
-      } else {
-        running = false;
+      if (count >= goal) {
         clearInterval(interval);
+        running = false;
+        alert("목표 횟수 달성! 오늘의 뽀모도로 완료!");
         playBtn.textContent = "▶";
         playBtn.classList.remove("stop");
         playBtn.classList.add("play");
+        return;
       }
-    });
+      alert("휴식 종료! 다시 집중 시작!");
+    }
+    updateDisplay();
+  }
 
-    stopBtn.addEventListener("click", () => {
-      clearInterval(interval);
+  playBtn.addEventListener("click", () => {
+    if (!running) {
+      running = true;
+      playBtn.textContent = "⏸";
+      playBtn.classList.remove("play");
+      playBtn.classList.add("stop");
+
+      interval = setInterval(() => {
+        if (timeLeft > 0) {
+          timeLeft--;
+          updateDisplay();
+        } else {
+          switchPhase();
+        }
+      }, 1000);
+    } else {
       running = false;
-      isFocus = true;
-      focusTime = parseInt(focusInput.value) * 60;
-      breakTime = parseInt(breakInput.value) * 60;
-      goal = parseInt(goalInput.value);
-      timeLeft = focusTime;
-      count = 0;
-      countEl.textContent = count;
-      updateDisplay();
+      clearInterval(interval);
       playBtn.textContent = "▶";
       playBtn.classList.remove("stop");
       playBtn.classList.add("play");
+    }
+  });
+
+  stopBtn.addEventListener("click", () => {
+    clearInterval(interval);
+    running = false;
+    isFocus = true;
+    focusTime = parseInt(focusInput.value) * 60;
+    breakTime = parseInt(breakInput.value) * 60;
+    goal = parseInt(goalInput.value);
+    timeLeft = focusTime;
+    count = 0;
+    countEl.textContent = count;
+    updateDisplay();
+    playBtn.textContent = "▶";
+    playBtn.classList.remove("stop");
+    playBtn.classList.add("play");
+  });
+
+  updateDisplay();
+
+  // ===== 메모 관련 =====
+    function renderMemo(memo) {
+    const box = document.createElement("div");
+    box.className = "memo-box";
+
+    const titleRow = document.createElement("div");
+    titleRow.className = "memo-title-row";
+
+    const titleEl = document.createElement("span");
+    titleEl.textContent = memo.title;
+
+    const iconBox = document.createElement("div");
+    iconBox.className = "memo-icons";
+
+    // 수정 아이콘
+    const editIcon = document.createElement("span");
+    editIcon.textContent = "✏️";
+    editIcon.addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        // 인라인 편집 UI 생성
+        const editForm = document.createElement("div");
+        editForm.style.marginTop = "0.5rem";
+
+        const titleInput = document.createElement("input");
+        titleInput.type = "text";
+        titleInput.value = memo.title;
+        titleInput.style.width = "100%";
+
+        const contentInput = document.createElement("textarea");
+        contentInput.value = memo.content || "";
+        contentInput.style.width = "100%";
+        contentInput.style.marginTop = "0.5rem";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = "저장";
+        saveBtn.style.marginRight = "0.5rem";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.textContent = "취소";
+
+        editForm.appendChild(titleInput);
+        editForm.appendChild(contentInput);
+        editForm.appendChild(saveBtn);
+        editForm.appendChild(cancelBtn);
+
+        // 기존 내용 숨기고 편집폼 표시
+        contentEl.style.display = "none";
+        box.appendChild(editForm);
+
+        saveBtn.addEventListener("click", () => {
+        fetch("/timer/memo/write", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: memo.id, title: titleInput.value, content: contentInput.value })
+        })
+        .then(res => res.json())
+        .then(updated => {
+            titleEl.textContent = updated.memo.title;
+            contentEl.textContent = updated.memo.content;
+            box.removeChild(editForm);
+        });
+        });
+
+        cancelBtn.addEventListener("click", () => {
+        box.removeChild(editForm);
+        contentEl.style.display = "none";
+        });
     });
 
-    updateDisplay();
-  </script>
-</body>
-</html>
+    // 삭제 아이콘
+    const deleteIcon = document.createElement("span");
+    deleteIcon.textContent = "🗑️";
+    deleteIcon.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (confirm("정말 삭제하시겠습니까?")) {
+        fetch(`/timer/memo/${memo.id}`, { method: "DELETE" })
+            .then(res => {
+            if (res.ok) box.remove();
+            });
+        }
+    });
 
-<!-- 할 일: timer.py에서 받아온 값으로 시간 적용하게 바꾸기 -->
+    iconBox.appendChild(editIcon);
+    iconBox.appendChild(deleteIcon);
+
+    titleRow.appendChild(titleEl);
+    titleRow.appendChild(iconBox);
+
+    const contentEl = document.createElement("div");
+    contentEl.className = "memo-content";
+    contentEl.textContent = "내용 불러오는 중...";
+
+    // 타이틀 클릭 시 내용 토글
+    titleRow.addEventListener("click", () => {
+        if (contentEl.style.display === "none") {
+        fetch(`/timer/memo/${memo.id}`)
+            .then(res => res.json())
+            .then(detail => {
+            contentEl.textContent = detail.content;
+            contentEl.style.display = "block";
+            });
+        } else {
+        contentEl.style.display = "none";
+        }
+    });
+
+    box.appendChild(titleRow);
+    box.appendChild(contentEl);
+    return box;
+    }
+
+    // ===== 새 메모 작성 인라인 입력 =====
+document.getElementById("add-memo-btn").addEventListener("click", () => {
+  const memoContainer = document.getElementById("memo-container");
+
+  const formBox = document.createElement("div");
+  formBox.className = "memo-box";
+
+  const titleInput = document.createElement("input");
+  titleInput.type = "text";
+  titleInput.placeholder = "메모 제목";
+  titleInput.style.width = "100%";
+
+  const contentInput = document.createElement("textarea");
+  contentInput.placeholder = "메모 내용";
+  contentInput.style.width = "100%";
+  contentInput.style.marginTop = "0.5rem";
+
+  const saveBtn = document.createElement("button");
+  saveBtn.textContent = "저장";
+  saveBtn.style.marginRight = "0.5rem";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "취소";
+
+  formBox.appendChild(titleInput);
+  formBox.appendChild(contentInput);
+  formBox.appendChild(saveBtn);
+  formBox.appendChild(cancelBtn);
+
+  memoContainer.insertBefore(formBox, memoContainer.children[1]); // 메모 리스트 위에 추가
+
+  saveBtn.addEventListener("click", () => {
+    if (titleInput.value.trim() !== "") {
+      fetch("/timer/memo/write", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: titleInput.value, content: contentInput.value })
+      })
+      .then(res => res.json())
+      .then(newMemo => {
+        memoContainer.replaceChild(renderMemo(newMemo.memo), formBox);
+      });
+    }
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    memoContainer.removeChild(formBox);
+  });
+});
+
+
+  document.getElementById("add-memo-btn").addEventListener("click", () => {
+    const title = prompt("메모 제목을 입력하세요");
+    const content = prompt("메모 내용을 입력하세요");
+    if (title) {
+      fetch("/timer/memo/write", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, content })
+      })
+      .then(res => res.json())
+      .then(newMemo => {
+        const memoContainer = document.getElementById("memo-container");
+        memoContainer.appendChild(renderMemo(newMemo.memo));
+      });
+    }
+  });
+
+  // 페이지 로딩 시 기존 메모 불러오기
+  fetch("/timer/api/timer-data")
+    .then(res => res.json())
+    .then(data => {
+      focusInput.value = data.focus_time;
+      breakInput.value = data.break_time;
+      focusTime = parseInt(focusInput.value) * 60;
+      breakTime = parseInt(breakInput.value) * 60;
+      timeLeft = focusTime;
+      updateDisplay();
+
+      if (data.memos && data.memos.length > 0) {
+        const memoContainer = document.getElementById("memo-container");
+        data.memos.forEach(memo => {
+          memoContainer.appendChild(renderMemo(memo));
+        });
+      }
+    })
+    .catch(err => console.error("타이머 데이터 불러오기 실패:", err));
+</script>
+<!-- 할 일: 임시 테스트 상태. 레이아웃이랑 건들거 많음 -->
