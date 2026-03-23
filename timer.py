@@ -10,14 +10,16 @@ from fastapi import Form, FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-import user
+from datetime import date
+from user import get_current_user, oauth2_scheme
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from db import get_db, User
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
-# timer.py 20번째 줄 근처 (수정 후 모습)
-@router.post("/timer") # 만약 라우터 설정이 있다면 이 줄이 위에 있을 거예요.
-async def timer(request: Request, signin_data: user.UserLogin, db_session: AsyncSession = Depends(get_db)):
-    # 여기서부터는 함수의 내용(내용이 없다면 일단 pass라고 적어두세요)
+@router.get("/timer", response_class=HTMLResponse)
+async def timer(request: Request, signin_data: dict, db_session: AsyncSession = Depends(get_db)):
     pass

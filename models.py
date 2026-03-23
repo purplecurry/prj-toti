@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, Date, Text, ForeignKey, DateTime
 from sqlalchemy.sql import func
-from database import Base # 공통 DB 설정 (민지님과 공유)
+from db import Base # 공통 DB 설정 (민지님과 공유)
 
 # 동제님의 담당: 메모 모델
 class Memo(Base):
