@@ -46,7 +46,7 @@ class PomodoroSession(Base):                                     # 포모도로 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     date = Column(Date)
-    total_completed = Column(Integer, default=0)
+    total_duration = Column(Integer, default=0)
 
 class SessionDetail(Base):                                       # 세션 상세 테이블
     __tablename__ = "session_details"
