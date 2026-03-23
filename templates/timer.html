@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Pomodoro Timer</title>
+  <style>
+    body { font-family: 'Noto Sans KR', sans-serif; text-align: center; }
+    .timer-display { font-size: 2rem; margin: 1rem; }
+    .control-btn { font-size: 1.5rem; padding: 0.5rem 1rem; margin: 0.5rem; }
+    .play { background: #28a745; color: white; }
+    .stop { background: #dc3545; color: white; }
+    input { width: 50px; text-align: center; }
+  </style>
+</head>
+<body>
+  <h1>Pomodoro Timer</h1>
+  <div class="timer-display" id="main-timer">25:00</div>
+
+  <div>
+    집중 시간: <input id="focus-input" type="number" value="25"> 분
+  </div>
+  <div>
+    휴식 시간: <input id="break-input" type="number" value="5"> 분
+  </div>
+  <div>
+    목표 횟수: <input id="goal-input" type="number" value="4"> 회
+  </div>
+  <div>
+    현재 횟수: <span id="count">0</span>
+  </div>
+
+  <button id="play-btn" class="control-btn play">▶</button>
+  <button id="stop-btn" class="control-btn stop">■</button>
+
+  <script>
+    const playBtn = document.getElementById("play-btn");
+    const stopBtn = document.getElementById("stop-btn");
+    const mainTimer = document.getElementById("main-timer");
+    const focusInput = document.getElementById("focus-input");
+    const breakInput = document.getElementById("break-input");
+    const goalInput = document.getElementById("goal-input");
+    const countEl = document.getElementById("count");
+
+    let running = false;
+    let interval = null;
+    let isFocus = true;
+    let focusTime = parseInt(focusInput.value) * 60;
+    let breakTime = parseInt(breakInput.value) * 60;
+    let timeLeft = focusTime;
+    let count = 0;
+    let goal = parseInt(goalInput.value);
+
+    function updateDisplay() {
+      const minutes = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+      const seconds = String(timeLeft % 60).padStart(2, "0");
+      mainTimer.textContent = `${minutes}:${seconds}`;
+    }
+
+    function switchPhase() {
+      if (isFocus) {
+        // 집중 끝 → 휴식 시작
+        isFocus = false;
+        breakTime = parseInt(breakInput.value) * 60;
+        timeLeft = breakTime;
+        alert("집중 시간 종료! 휴식 시작!");
+      } else {
+        // 휴식 끝 → 집중 시작
+        isFocus = true;
+        focusTime = parseInt(focusInput.value) * 60;
+        timeLeft = focusTime;
+        count++;
+        countEl.textContent = count;
+
+        if (count >= goal) {
+          clearInterval(interval);
+          running = false;
+          alert("목표 횟수 달성! 오늘의 뽀모도로 완료!");
+          playBtn.textContent = "▶";
+          playBtn.classList.remove("stop");
+          playBtn.classList.add("play");
+          return;
+        }
+        alert("휴식 종료! 다시 집중 시작!");
+      }
+      updateDisplay();
+    }
+
+    playBtn.addEventListener("click", () => {
+      if (!running) {
+        running = true;
+        playBtn.textContent = "⏸";
+        playBtn.classList.remove("play");
+        playBtn.classList.add("stop");
+
+        interval = setInterval(() => {
+          if (timeLeft > 0) {
+            timeLeft--;
+            updateDisplay();
+          } else {
+            switchPhase();
+          }
+        }, 1000);
+      } else {
+        running = false;
+        clearInterval(interval);
+        playBtn.textContent = "▶";
+        playBtn.classList.remove("stop");
+        playBtn.classList.add("play");
+      }
+    });
+
+    stopBtn.addEventListener("click", () => {
+      clearInterval(interval);
+      running = false;
+      isFocus = true;
+      focusTime = parseInt(focusInput.value) * 60;
+      breakTime = parseInt(breakInput.value) * 60;
+      goal = parseInt(goalInput.value);
+      timeLeft = focusTime;
+      count = 0;
+      countEl.textContent = count;
+      updateDisplay();
+      playBtn.textContent = "▶";
+      playBtn.classList.remove("stop");
+      playBtn.classList.add("play");
+    });
+
+    updateDisplay();
+  </script>
+</body>
+</html>
+
+<!-- 할 일: timer.py에서 받아온 값으로 시간 적용하게 바꾸기 -->
