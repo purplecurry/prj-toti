@@ -11,8 +11,18 @@ async def app_life_span(app: FastAPI):
     async with db.engine.begin() as conn:
         await conn.run_sync(db.Base.metadata.create_all)
     yield
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(lifespan=app_life_span)
+
+# app = FastAPI() 바로 밑에 추가
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # 모든 곳에서 접속 허용 (개발용)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(timer.router)
 app.include_router(my_calendar.router)
