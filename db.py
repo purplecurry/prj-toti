@@ -7,7 +7,7 @@ import os
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = "sqlite+aiosqlite:///./sql_app.db"
 
 # 비동기 엔진
 engine = create_async_engine(DATABASE_URL, echo=True)
@@ -46,7 +46,7 @@ class PomodoroSession(Base):                                     # 포모도로 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     date = Column(Date)
-    total_duration = Column(Integer, default=0)
+    total_completed = Column(Integer, default=0)
 
 class SessionDetail(Base):                                       # 세션 상세 테이블
     __tablename__ = "session_details"
