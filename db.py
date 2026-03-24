@@ -8,7 +8,7 @@ from sqlalchemy import Column, Integer, String, Boolean, Text, Date, DateTime, F
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = "sqlite+aiosqlite:///./sql_app.db"
 
 # 비동기 엔진
 engine = create_async_engine(DATABASE_URL, echo=True)
