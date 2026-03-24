@@ -4,6 +4,7 @@ from sqlalchemy import Column, Integer, String, Boolean, Text, Date, DateTime, F
 from sqlalchemy.sql import func  
 from dotenv import load_dotenv
 import os
+from sqlalchemy import Column, Integer, String, Boolean, Text, Date, DateTime, ForeignKey, UniqueConstraint
 
 load_dotenv()
 
@@ -32,9 +33,9 @@ async def get_db():
 class User(Base):                                                 # 유저 테이블
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
-    email = Column(String(100))
-    password = Column(String(200))
-    nickname = Column(String(50))
+    email = Column(String(100), unique=True, nullable=False)
+    password = Column(String(200), nullable=False)
+    nickname = Column(String(50), unique=True, nullable=False)
     goal_minutes = Column(Integer, default=120)
     default_focus_time = Column(Integer, default=25)
     default_break_time = Column(Integer, default=5)
@@ -47,6 +48,7 @@ class PomodoroSession(Base):                                     # 포모도로 
     user_id = Column(Integer, ForeignKey("users.id"))
     date = Column(Date)
     total_duration = Column(Integer, default=0)
+    __table_args__ = (UniqueConstraint("user_id", "date"),)
 
 class SessionDetail(Base):                                       # 세션 상세 테이블
     __tablename__ = "session_details"
@@ -84,6 +86,7 @@ class StudyRecord(Base):                                         # 공부기록 
     total_minutes = Column(Integer, default=0)
     completed_sessions = Column(Integer, default=0)
     goal_achieved = Column(Boolean, default=False)
+    __table_args__ = (UniqueConstraint("user_id", "date"),)
 
 class AiLog(Base):                                              # AI 로그 테이블
     __tablename__ = "ai_logs"
