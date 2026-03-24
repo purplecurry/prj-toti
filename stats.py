@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, extract
 from db import get_db, StudyRecord
+from user import get_current_user
 from datetime import date
 
 router = APIRouter()
@@ -10,11 +11,11 @@ stats_router = APIRouter(prefix="/stats")
 # 세션 저장
 @router.post("/sessions")
 async def create_session(
-    user_id: int,
     target_date: date,
     total_minutes: int,
     completed_sessions: int,
     goal_achieved: bool,
+    user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     record = StudyRecord(
@@ -31,8 +32,8 @@ async def create_session(
 # 일별 통계
 @stats_router.get("/daily")
 async def get_daily_stats(
-    user_id: int,
     target_date: date,
+    user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
@@ -46,9 +47,9 @@ async def get_daily_stats(
 # 주간 통계
 @stats_router.get("/weekly")
 async def get_weekly_stats(
-    user_id: int,
     year: int,
     week: int,
+    user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
@@ -63,9 +64,9 @@ async def get_weekly_stats(
 # 월간 통계
 @stats_router.get("/monthly")
 async def get_monthly_stats(
-    user_id: int,
     year: int,
     month: int,
+    user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
@@ -80,8 +81,8 @@ async def get_monthly_stats(
 # 년간 통계
 @stats_router.get("/yearly")
 async def get_yearly_stats(
-    user_id: int,
     year: int,
+    user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
