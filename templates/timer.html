@@ -4,130 +4,337 @@
   <meta charset="UTF-8">
   <title>Pomodoro Timer</title>
   <style>
-    body { font-family: 'Noto Sans KR', sans-serif; text-align: center; }
-    .timer-display { font-size: 2rem; margin: 1rem; }
-    .control-btn { font-size: 1.5rem; padding: 0.5rem 1rem; margin: 0.5rem; }
-    .play { background: #28a745; color: white; }
-    .stop { background: #dc3545; color: white; }
-    input { width: 50px; text-align: center; }
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #f5f5f5;
+    }
+
+    .timer-container {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      margin-bottom: 20px;
+    }
+
+    /* 원형 진행바 (SVG) */
+    .circle {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #focus-circle{
+      fill: none;
+      stroke-width: 40;
+      stroke-linecap: round;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 1s linear; /* 부드럽게 변화 */
+      stroke: red;
+    }
+
+    #break-circle {
+      fill: none;
+      stroke-width: 20;
+      stroke-linecap: round;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 1s linear; /* 부드럽게 변화 */
+      stroke: green;
+    }
+
+    /* 중앙 박스 */
+    .time-box {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #d0d0d0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .counter {
+      font-size: 1.2em;
+      color: black;
+      margin-bottom: 10px;
+      font-weight: normal;
+    }
+
+    .big-time {
+      font-size: 2em;
+      font-weight: bold;
+      color: black;
+    }
+
+    .small-time {
+      font-size: 1.2em;
+      color: black;
+      margin-top: 10px;
+    }
+
+    /* 하단 바 전체 */
+    .bottom-bar {
+      display: flex;
+      justify-content: space-between; /* 왼쪽은 inputs, 오른쪽은 버튼 */
+      align-items: center;
+      width: 800px; /* 가로 길이 확장 */
+      margin-top: 50px; /* 타이머와 간격 확보 */
+      padding: 15px 20px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #f9f9f9;
+    }
+
+    /* 입력 박스 */
+    .inputs {
+      display: flex;
+      gap: 15px;
+      font-size: 1.5em; /* 글자 크기 확대 */
+    }
+
+    .inputs input {
+      width: 90px;
+      font-size: 1.2em;
+      text-align: center;
+    }
+
+    /* 버튼 */
+    .controls {
+      display: flex;
+      flex-direction: row; /* 버튼 가로 정렬 */
+      gap: 10px;
+    }
+
+    .controls button {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 50px;   /* 버튼 크기 고정 */
+      height: 50px;  /* 버튼 크기 고정 */
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #f0f0f0;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .controls button:hover {
+      background: #e0e0e0;
+    }
+
+    .controls svg {
+      width: 24px;   /* 아이콘 크기 고정 */
+      height: 24px;
+      fill: #333;
+    }
   </style>
 </head>
 <body>
-  <h1>Pomodoro Timer</h1>
-  <div class="timer-display" id="main-timer">25:00</div>
+  <div class="timer-container">
+    <!-- 집중 타이머 (빨간색 원형) -->
+    <svg class="circle" width="300" height="300">
+      <circle id="focus-circle" cx="150" cy="150" r="100" />
+    </svg>
 
-  <div>
-    집중 시간: <input id="focus-input" type="number" value="25"> 분
-  </div>
-  <div>
-    휴식 시간: <input id="break-input" type="number" value="5"> 분
-  </div>
-  <div>
-    목표 횟수: <input id="goal-input" type="number" value="4"> 회
-  </div>
-  <div>
-    현재 횟수: <span id="count">0</span>
+    <!-- 휴식 타이머 (녹색 원형) -->
+    <svg class="circle" width="300" height="300">
+      <circle id="break-circle" cx="150" cy="150" r="90" />
+    </svg>
+
+    <div class="time-box">
+      <div class="counter" id="counter">0/4</div>
+      <div class="big-time" id="focus-time">25:00</div>
+      <div class="small-time" id="break-time">05:00</div>
+    </div>
   </div>
 
-  <button id="play-btn" class="control-btn play">▶</button>
-  <button id="stop-btn" class="control-btn stop">■</button>
+
+<!-- 하단 입력 + 버튼을 한 줄로 -->
+<div class="bottom-bar">
+  <div class="inputs">
+    <label>집중 <input type="number" id="focus-input" value="25"></label>
+    <label>휴식 <input type="number" id="break-input" value="5"></label>
+    <label>횟수 <input type="number" id="count-input" value="4"></label>
+  </div>
+  <div class="controls">
+    <!-- 재생 버튼 -->
+    <button id="start-btn">
+      <svg id="start-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M8 5v14l11-7z"/> <!-- ▶ 아이콘 -->
+      </svg>
+    </button>
+
+    <!-- 정지 버튼 -->
+    <button id="stop-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <rect x="6" y="6" width="12" height="12"/> <!-- ■ 아이콘 -->
+      </svg>
+    </button>
+  </div>
+</div>
 
   <script>
-    const playBtn = document.getElementById("play-btn");
-    const stopBtn = document.getElementById("stop-btn");
-    const mainTimer = document.getElementById("main-timer");
-    const focusInput = document.getElementById("focus-input");
-    const breakInput = document.getElementById("break-input");
-    const goalInput = document.getElementById("goal-input");
-    const countEl = document.getElementById("count");
-
-    let running = false;
-    let interval = null;
+    let focusTime, breakTime, totalCount;
+    let currentCount = 0;
+    let timer = null;
+    let isRunning = false;
+    let isPaused = false;
     let isFocus = true;
-    let focusTime = parseInt(focusInput.value) * 60;
-    let breakTime = parseInt(breakInput.value) * 60;
-    let timeLeft = focusTime;
-    let count = 0;
-    let goal = parseInt(goalInput.value);
+    let remainingTime;
 
-    function updateDisplay() {
-      const minutes = String(Math.floor(timeLeft / 60)).padStart(2, "0");
-      const seconds = String(timeLeft % 60).padStart(2, "0");
-      mainTimer.textContent = `${minutes}:${seconds}`;
+    const focusDisplay = document.getElementById("focus-time");
+    const breakDisplay = document.getElementById("break-time");
+    const counterDisplay = document.getElementById("counter");
+    const startBtn = document.getElementById("start-btn");
+    const stopBtn = document.getElementById("stop-btn");
+
+    const focusCircle = document.getElementById("focus-circle");
+    const breakCircle = document.getElementById("break-circle");
+
+    // 원 둘레 계산
+    const focusCircumference = 2 * Math.PI * 100; // r=120
+    const breakCircumference = 2 * Math.PI * 90;  // r=90
+
+    focusCircle.style.strokeDasharray = focusCircumference;
+    focusCircle.style.strokeDashoffset = focusCircumference;
+
+    breakCircle.style.strokeDasharray = breakCircumference;
+    breakCircle.style.strokeDashoffset = breakCircumference;
+
+    /* ▶ 아이콘 */
+    function setPlayIcon() {
+      startBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z"/>
+        </svg>`;
     }
 
-    function switchPhase() {
+    /* ⏸ 아이콘 */
+    function setPauseIcon() {
+      startBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M6 19h4V5H6zm8-14v14h4V5z"/>
+        </svg>`;
+    }
+
+    function updateDisplays() {
+      focusDisplay.textContent = formatTime(focusTime * 60);
+      breakDisplay.textContent = formatTime(breakTime * 60);
+      counterDisplay.textContent = `${currentCount}/${totalCount}`;
+    }
+
+    function formatTime(seconds) {
+      const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const s = String(seconds % 60).padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function updateProgress() {
       if (isFocus) {
-        // 집중 끝 → 휴식 시작
-        isFocus = false;
-        breakTime = parseInt(breakInput.value) * 60;
-        timeLeft = breakTime;
-        alert("집중 시간 종료! 휴식 시작!");
+        const progress = remainingTime / (focusTime * 60);
+        focusCircle.style.strokeDashoffset = focusCircumference * progress;
       } else {
-        // 휴식 끝 → 집중 시작
-        isFocus = true;
-        focusTime = parseInt(focusInput.value) * 60;
-        timeLeft = focusTime;
-        count++;
-        countEl.textContent = count;
-
-        if (count >= goal) {
-          clearInterval(interval);
-          running = false;
-          alert("목표 횟수 달성! 오늘의 뽀모도로 완료!");
-          playBtn.textContent = "▶";
-          playBtn.classList.remove("stop");
-          playBtn.classList.add("play");
-          return;
-        }
-        alert("휴식 종료! 다시 집중 시작!");
+        const progress = remainingTime / (breakTime * 60);
+        breakCircle.style.strokeDashoffset = breakCircumference * progress;
       }
-      updateDisplay();
     }
 
-    playBtn.addEventListener("click", () => {
-      if (!running) {
-        running = true;
-        playBtn.textContent = "⏸";
-        playBtn.classList.remove("play");
-        playBtn.classList.add("stop");
-
-        interval = setInterval(() => {
-          if (timeLeft > 0) {
-            timeLeft--;
-            updateDisplay();
-          } else {
-            switchPhase();
-          }
-        }, 1000);
+    function startTimer() {
+      if (!isRunning) {
+        // 처음 시작
+        focusTime = parseInt(document.getElementById("focus-input").value);
+        breakTime = parseInt(document.getElementById("break-input").value);
+        totalCount = parseInt(document.getElementById("count-input").value);
+        currentCount = 0;
+        isFocus = true;
+        remainingTime = focusTime * 60;
+        updateDisplays();
+        runInterval();
+        isRunning = true;
+        isPaused = false;
+        setPauseIcon(); // ▶ → ⏸
+      } else if (!isPaused) {
+        // 실행 중 → 일시정지
+        clearInterval(timer);
+        timer = null;
+        isPaused = true;
+        setPlayIcon(); // ⏸ → ▶
       } else {
-        running = false;
-        clearInterval(interval);
-        playBtn.textContent = "▶";
-        playBtn.classList.remove("stop");
-        playBtn.classList.add("play");
+        // 일시정지 상태 → 재개
+        runInterval();
+        isPaused = false;
+        setPauseIcon(); // ▶ → ⏸
       }
-    });
+    }
 
-    stopBtn.addEventListener("click", () => {
-      clearInterval(interval);
-      running = false;
-      isFocus = true;
-      focusTime = parseInt(focusInput.value) * 60;
-      breakTime = parseInt(breakInput.value) * 60;
-      goal = parseInt(goalInput.value);
-      timeLeft = focusTime;
-      count = 0;
-      countEl.textContent = count;
-      updateDisplay();
-      playBtn.textContent = "▶";
-      playBtn.classList.remove("stop");
-      playBtn.classList.add("play");
-    });
+    function runInterval() {
+      timer = setInterval(runTimer, 1000);
+    }
 
-    updateDisplay();
+    function runTimer() {
+      remainingTime--;
+      if (isFocus) {
+        focusDisplay.textContent = formatTime(remainingTime);
+      } else {
+        breakDisplay.textContent = formatTime(remainingTime);
+      }
+
+      updateProgress(); // 진행률 업데이트
+
+      if (remainingTime <= 0) {
+        if (isFocus) {
+          currentCount++;
+          counterDisplay.textContent = `${currentCount}/${totalCount}`;
+          if (currentCount >= totalCount) {
+            stopTimer(); // 종료
+            return;
+          }
+          isFocus = false;
+          remainingTime = breakTime * 60;
+        } else {
+          isFocus = true;
+          remainingTime = focusTime * 60;
+        }
+      }
+    }
+
+    function stopTimer() {
+      clearInterval(timer);
+      timer = null;
+      isRunning = false;
+      isPaused = false;
+      currentCount = 0;
+      updateDisplays();
+      setPlayIcon(); // 항상 ▶로 초기화
+      // 원형 진행률 초기화
+      focusCircle.style.strokeDashoffset = focusCircumference;
+      breakCircle.style.strokeDashoffset = breakCircumference;
+    }
+
+    startBtn.addEventListener("click", startTimer);
+    stopBtn.addEventListener("click", stopTimer);
+
+    /* 초기 상태: ▶ 아이콘 */
+    setPlayIcon();
   </script>
 </body>
 </html>
 
-<!-- 할 일: timer.py에서 받아온 값으로 시간 적용하게 바꾸기 -->
+<!--
+ 할 것 목록
+ 1) 타이머 ui 모양 맞추기
+ 2) 좌측 메모 구현하기
+ ㄴa) 메뉴는 로그인 후에만 표시 (마지막에 구현 예정)
+ ㄴb) 메시지 추가버튼, 각 메시지 내에는 편집, 삭제버튼
+ 3) 우측 메뉴 구현하기
+ ㄴa) 기본 햄버거 버튼. 누르면 펼쳐지게
+ ㄴb) 엥? 햄버거 버튼 필요한가? 그냥 사람 모양 놔두고 마이페이지 보내면 되는거 아닌가?
+ 4) bgm 재생 관련 구현하기
+ ㄴ이건 진짜 마지막에 구현 할 예정. 들어갈 bgm도, 데이터 구조도, 관련 저장 기능도 다 다시 손 봐야 한다.
+  -->
