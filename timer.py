@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, Response
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.sql import func
@@ -9,10 +11,12 @@ from pydantic import BaseModel
 from typing import Optional
 import os
 from .db import get_db, User, Memo, PomodoroSession, SessionDetail
-from .user import get_current_user, oauth2_scheme
+from .user import SECRET_KEY, ALGORITHM
 
 router = APIRouter(prefix="/timer")
 
+# 로그인 확인 분기용 스키마. user와 달리 로그인이 필수가 아닌 영역들이 있음
+optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login", auto_error=False)
 
 # =====pydantic=====
 class SessionResult(BaseModel):
@@ -28,26 +32,30 @@ class MemoWrite(BaseModel):
 # =======유틸========
 
 async def get_user_from_uid(
-    token: str | None = Depends(oauth2_scheme), # 토큰 존재 여부 확인
+    token: str | None = Depends(optional_oauth2_scheme),
     db: AsyncSession = Depends(get_db)
 ) -> User | None:
-    # 토큰 자체가 없으면 바로 None 반환 (로그인 안 함)
+    
+    # 토큰이 아예 없으면 (비로그인) 즉시 None 반환
     if not token:
         return None
         
     try:
-        # 기존 user.py의 함수를 실행해서 user_id를 가져옴
-        user_id = await get_current_user(token, db)
+        # 2. 직접 토큰 복호화 (다른 사람 코드 의존성 제거)
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
         
-        # user_id로 DB에서 실제 유저 객체 조회
+        if user_id is None:
+            return None
+            
+        # 3. DB에서 유저 조회
         result = await db.execute(select(User).filter(User.id == user_id))
         user = result.scalar_one_or_none()
         return user
         
-    except HTTPException:
-        # 토큰이 잘못되었거나 만료되어 401 에러가 발생하면 None 반환
+    except (JWTError, HTTPException):
+        # 토큰 변조, 만료 등 어떤 에러가 나도 비로그인 취급(None)
         return None
-
 
 # ====엔드포인트====
 
