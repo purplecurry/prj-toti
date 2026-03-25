@@ -31,7 +31,7 @@ class MemoWrite(BaseModel):
 
 # =======유틸========
 
-async def get_user_from_uid(
+async def get_user_from_token(
     token: str | None = Depends(optional_oauth2_scheme),
     db: AsyncSession = Depends(get_db)
 ) -> User | None:
@@ -67,25 +67,32 @@ async def timer_page():
 
 # 모바일 페이지 욕심을 위한 api 분리
 @router.get("/api/timer-data")
-async def timer_data(current_user = Depends(get_user_from_uid), db:AsyncSession = Depends(get_db)):
-    focus_time = current_user.default_focus_time if current_user else 25
-    break_time = current_user.default_break_time if current_user else 5
-    memos = []
-    if current_user:
-        result = await db.execute(
-            select(Memo.id, Memo.title).filter(Memo.user_id == current_user.id)
-        )
-        memos = [{"id": m.id, "title": m.title} for m in result.all()]
-    # TODO: (가능하면) bgm 기능 추가시 가져오기
+async def timer_data(current_user=Depends(get_user_from_token), db: AsyncSession=Depends(get_db)):
+    if not current_user:
+        # 로그인 안 된 경우에도 JSON으로 응답
+        return {
+            "logged_in": False,
+            "focus_time": 25,
+            "break_time": 5,
+            "memos": []
+        }
+
+    # 로그인된 경우
+    result = await db.execute(
+        select(Memo.id, Memo.title).filter(Memo.user_id == current_user.id)
+    )
+    memos = [{"id": m.id, "title": m.title} for m in result.all()]
+
     return {
-        "focus_time": focus_time,
-        "break_time": break_time,
+        "logged_in": True,
+        "focus_time": current_user.default_focus_time,
+        "break_time": current_user.default_break_time,
         "memos": memos
     }
 
 #메모 저장시 신규 작성 혹은 수정
 @router.put("/memo/write")
-async def memo_write(body=MemoWrite, current_user=Depends(get_user_from_uid), db: AsyncSession=Depends(get_db)):
+async def memo_write(body=MemoWrite, current_user=Depends(get_user_from_token), db: AsyncSession=Depends(get_db)):
 
     if not current_user:
         raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
@@ -117,7 +124,7 @@ async def memo_write(body=MemoWrite, current_user=Depends(get_user_from_uid), db
 
 #프론트에서 메모 타이틀 클릭시 해당 메모 content 호출
 @router.get("/memo/{memo_id}")
-async def memo_content(memo_id: int, current_user=Depends(get_user_from_uid), db: AsyncSession=Depends(get_db)):
+async def memo_content(memo_id: int, current_user=Depends(get_user_from_token), db: AsyncSession=Depends(get_db)):
     if not current_user:
         raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
     
@@ -131,7 +138,7 @@ async def memo_content(memo_id: int, current_user=Depends(get_user_from_uid), db
 
 #프론트에서 타이머 종료시 해당 세션 저장
 @router.post("/session-end")
-async def session_end(body=SessionResult, current_user=Depends(get_user_from_uid), db: AsyncSession=Depends(get_db)):
+async def session_end(body=SessionResult, current_user=Depends(get_user_from_token), db: AsyncSession=Depends(get_db)):
 
     if not current_user:
         raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
