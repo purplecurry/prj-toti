@@ -372,14 +372,22 @@
     const focusCircumference = 2 * Math.PI * 100; // r=100
     const breakCircumference = 2 * Math.PI * 90;  // r=90
 
-
     // 서버에서 값 가져오기
     async function loadTimerData() {
       try {
         const res = await fetch("/timer/api/timer-data");
+
+        if (!res.ok) {
+          // 로그인 안 된 상태 → 기본값 사용
+          focusTime = 25;
+          breakTime = 5;
+          memoContent.innerHTML = "";
+          return;
+        }
+
         const data = await res.json();
 
-        // focus/break 시간은 로그인 여부에 따라 덮어쓰기
+        // 로그인된 경우 → 서버 값으로 덮어쓰기
         focusTime = data.focus_time;
         breakTime = data.break_time;
 
@@ -396,32 +404,47 @@
               <span>${m.title}</span>
               <div class="memo-actions">
                 <button class="edit-btn">✏️</button>
+                <button class="save-btn">💾</button>
                 <button class="delete-btn">🗑️</button>
               </div>
             </div>
             <div class="memo-body" style="display:none;">불러오기 전 내용...</div>
           `;
 
+
           memoContent.appendChild(memoItem);
           attachMemoEvents(memoItem);
 
-          // 메모 타이틀 클릭 시 서버에서 내용 불러오기
+          // 메모 타이틀 클릭 시 서버에서 내용 불러오기 + 펼치기
           const title = memoItem.querySelector(".memo-title span");
+          const body = memoItem.querySelector(".memo-body");
+
           title.addEventListener("click", async () => {
-            try {
-              const res = await fetch(`/timer/memo/${m.id}`);
-              if (res.ok) {
-                const memoData = await res.json();
-                memoItem.querySelector(".memo-body").textContent = memoData.content;
+            if (body.style.display === "none" || body.style.display === "") {
+              try {
+                const res = await fetch(`/timer/memo/${m.id}`);
+                if (res.ok) {
+                  const memoData = await res.json();
+                  body.textContent = memoData.content;
+                } else {
+                  body.textContent = "내용을 불러올 수 없습니다.";
+                }
+              } catch (err) {
+                console.error("메모 불러오기 실패", err);
+                body.textContent = "서버 오류로 내용을 불러올 수 없습니다.";
               }
-            } catch (err) {
-              console.error("메모 불러오기 실패", err);
+              body.style.display = "block";
+            } else {
+              body.style.display = "none";
             }
           });
         });
 
       } catch (err) {
         console.error("타이머 데이터 불러오기 실패", err);
+        focusTime = 25;
+        breakTime = 5;
+        memoContent.innerHTML = "";
       }
     }
 
@@ -556,69 +579,58 @@
     const mypageBtn = document.querySelector(".top-right-buttons .circle-btn:nth-child(1)");
     const calendarBtn = document.querySelector(".top-right-buttons .circle-btn:nth-child(2)");
     const memoToggleBtn = document.querySelector(".top-right-buttons .circle-btn:nth-child(3)");
+    const memoBox = document.getElementById("memo-box");
 
-    // 공통 로그인 체크 함수
-    async function checkLogin() {
-      try {
-        const res = await fetch("/timer/api/timer-data");
-        const data = await res.json();
-        return data.logged_in;
-      } catch (err) {
-        console.error(err);
-        alert("서버와 연결할 수 없습니다.");
-        return false;
-      }
-    }
+    // // 공통 로그인 체크 함수
+    // async function checkLogin() {
+    //   try {
+    //     const res = await fetch("/timer/api/timer-data");
+    //     if (!res.ok) return false; // 401 등 비로그인 상태
+    //     const data = await res.json();
+    //     return data.logged_in;
+    //   } catch (err) {
+    //     console.error(err);
+    //     alert("서버와 연결할 수 없습니다.");
+    //     return false;
+    //   }
+    // }
 
-    // 마이페이지 버튼
-    mypageBtn.addEventListener("click", async () => {
-      const loggedIn = await checkLogin();
-      if (!loggedIn) {
-        const goLogin = confirm("로그인이 필요합니다");
-        if (goLogin) {
-          window.location.href = "/templates/login.html";
-        }
-        return;
-      }
-      window.location.href = "/templates/mypage.html";
-    });
-
-    // 캘린더 버튼
-    calendarBtn.addEventListener("click", async () => {
-      const loggedIn = await checkLogin();
-      if (!loggedIn) {
-        const goLogin = confirm("로그인이 필요합니다");
-        if (goLogin) {
-          window.location.href = "/templates/login.html";
-        }
-        return;
-      }
-      window.location.href = "/templates/mycalendar.html";
-    });
-
-    // // 메모 버튼
-    // memoToggleBtn.addEventListener("click", async () => {
+    // // 마이페이지 버튼
+    // mypageBtn.addEventListener("click", async () => {
     //   const loggedIn = await checkLogin();
     //   if (!loggedIn) {
     //     const goLogin = confirm("로그인이 필요합니다");
-    //     if (goLogin) {
-    //       window.location.href = "/templates/login.html";
-    //     }
+    //     if (goLogin) window.location.href = "/templates/login.html";
     //     return;
     //   }
-
-    //   // 로그인된 상태 → 메모 박스 토글
-    //   if (memoBox.style.display === "none" || memoBox.style.display === "") {
-    //     memoBox.style.display = "block";
-    //   } else {
-    //     memoBox.style.display = "none";
-    //   }
+    //   window.location.href = "/templates/mypage.html";
     // });
 
-    // 메모기능, 로그인 기능 완성시 교체
+    // // 캘린더 버튼
+    // calendarBtn.addEventListener("click", async () => {
+    //   const loggedIn = await checkLogin();
+    //   if (!loggedIn) {
+    //     const goLogin = confirm("로그인이 필요합니다");
+    //     if (goLogin) window.location.href = "/templates/login.html";
+    //     return;
+    //   }
+    //   window.location.href = "/templates/mycalendar.html";
+    // });
+
+    // // 메모 버튼, 로그인 기능 작동시 아래의 비로그인 영역과 교체
     // memoToggleBtn.addEventListener("click", async () => {
     //   try {
     //     const res = await fetch("/timer/api/timer-data");
+
+    //     if (!res.ok) {
+    //       // 로그인 안 된 상태 → confirm 띄우기
+    //       const goLogin = confirm("로그인이 필요합니다");
+    //       if (goLogin) {
+    //         window.location.href = "/templates/login.html";
+    //       }
+    //       return;
+    //     }
+
     //     const data = await res.json();
 
     //     if (!data.logged_in) {
@@ -626,22 +638,20 @@
     //       if (goLogin) {
     //         window.location.href = "/templates/login.html";
     //       }
-    //       return; // 로그인 안 된 경우 여기서 종료
+    //       return;
     //     }
 
-    //     // 로그인된 경우에만 메모 박스 토글
-    //     if (memoBox.style.display === "none" || memoBox.style.display === "") {
-    //       memoBox.style.display = "block";
-    //     } else {
-    //       memoBox.style.display = "none";
-    //     }
+    //     // 로그인된 상태 → 메모 박스 토글
+    //     memoBox.style.display =
+    //       (memoBox.style.display === "none" || memoBox.style.display === "")
+    //         ? "block"
+    //         : "none";
 
     //   } catch (err) {
-    //     console.error(err);
+    //     console.error("서버 연결 실패", err);
     //     alert("서버와 연결할 수 없습니다.");
     //   }
     // });
-
 
     // 비 로그인 테스트용
     memoToggleBtn.addEventListener("click", () => {
@@ -653,7 +663,6 @@
     });
 
     // 여기서부터는 메모
-    const memoBox = document.getElementById("memo-box");
     const memoHeader = document.getElementById("memo-header");
 
 
@@ -727,26 +736,67 @@
       });
 
       // 수정 버튼 → 편집 모드 / 저장 모드
-      editBtn.addEventListener("click", () => {
+      editBtn.addEventListener("click", async () => {
         if (editBtn.textContent === "✏️") {
           // 편집 시작
           title.setAttribute("contenteditable", "true");
           body.setAttribute("contenteditable", "true");
-          body.style.display = "block"; // 편집 중에는 펼쳐진 상태 고정
+          body.style.display = "block";
           title.focus();
-          editBtn.textContent = "💾"; // 아이콘 변경
+          editBtn.textContent = "💾";
         } else {
           // 저장 (편집 종료)
           title.removeAttribute("contenteditable");
           body.removeAttribute("contenteditable");
-          editBtn.textContent = "✏️"; // 다시 연필로 변경
-          body.style.display = "block"; // 저장 후에도 펼쳐진 상태 유지
+          editBtn.textContent = "✏️";
+          body.style.display = "block";
+
+          // 서버에 저장 요청
+          try {
+            const res = await fetch("/timer/memo/write", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id: memoItem.dataset.id || null, // 신규 메모면 id 없음
+                title: title.textContent,
+                content: body.textContent
+              })
+            });
+            const data = await res.json();
+            if (res.ok) {
+              // 신규 메모라면 서버에서 받은 id를 저장해둠
+              memoItem.dataset.id = data.memo.id;
+              alert("메모 저장 완료!");
+            } else {
+              alert(data.detail || "메모 저장 실패");
+            }
+          } catch (err) {
+            console.error("메모 저장 실패", err);
+          }
         }
       });
 
       // 삭제 버튼 → 메모 삭제
-      deleteBtn.addEventListener("click", () => {
-        memoItem.remove();
+      deleteBtn.addEventListener("click", async () => {
+        if (!confirm("정말 삭제하시겠습니까?")) return;
+
+        const memoId = memoItem.dataset.id;
+        if (!memoId) {
+          memoItem.remove(); // 아직 서버에 저장되지 않은 신규 메모라면 그냥 제거
+          return;
+        }
+
+        try {
+          const res = await fetch(`/timer/memo/${memoId}`, { method: "DELETE" });
+          if (res.ok) {
+            alert("메모 삭제 완료!");
+            memoItem.remove();
+          } else {
+            alert("메모 삭제 실패");
+          }
+        } catch (err) {
+          console.error("메모 삭제 실패", err);
+        }
       });
 
       // 타이틀에서 Tab → 내용으로 이동
