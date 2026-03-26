@@ -29,54 +29,54 @@ class MemoWrite(BaseModel):
 # =======유틸========
 
 
-# async def get_user_from_token(
-#     token: str = Depends(oauth2_scheme),
-#     db: AsyncSession = Depends(get_db)
-# ) -> User:
-#     if not token:
-#         # 토큰이 없으면 바로 401
-#         raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
-
-#     try:
-#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-#         user_id = payload.get("user_id")
-
-#         if user_id is None:
-#             raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
-
-#         result = await db.execute(select(User).filter(User.id == user_id))
-#         user = result.scalar_one_or_none()
-
-#         if not user:
-#             raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
-
-#         return user
-
-#     except JWTError:
-#         raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
-
-# 임시 테스트용
 async def get_user_from_token(
-    token: str | None = None,   # 토큰 무시
+    token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db)
 ) -> User:
-    # 임시로 항상 첫 번째 유저 반환
-    result = await db.execute(select(User).limit(1))
-    user = result.scalar_one_or_none()
-    if user:
-        await db.refresh(user)
-    if not user:
-        # 유저가 없으면 테스트용 더미 유저 생성
-        user = User(
-            email="test@example.com",
-            password="1234",
-            nickname="tester"
-        )
-        db.add(user)
-        await db.commit()
-        await db.refresh(user)
+    if not token:
+        # 토큰이 없으면 바로 401
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
 
-    return user
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+        result = await db.execute(select(User).filter(User.id == user_id))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+        return user
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+# # 임시 테스트용
+# async def get_user_from_token(
+#     token: str | None = None,   # 토큰 무시
+#     db: AsyncSession = Depends(get_db)
+# ) -> User:
+#     # 임시로 항상 첫 번째 유저 반환
+#     result = await db.execute(select(User).limit(1))
+#     user = result.scalar_one_or_none()
+#     if user:
+#         await db.refresh(user)
+#     if not user:
+#         # 유저가 없으면 테스트용 더미 유저 생성
+#         user = User(
+#             email="test@example.com",
+#             password="1234",
+#             nickname="tester"
+#         )
+#         db.add(user)
+#         await db.commit()
+#         await db.refresh(user)
+
+#     return user
 
 
 
