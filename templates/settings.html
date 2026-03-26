@@ -157,10 +157,9 @@
 
     if (!token) {
       alert("로그인이 필요합니다.");
-      window.location.href = "login.html";
+      window.location.href = "/users/login-page";
     }
 
-    // 현재 설정값 불러오기
     async function loadCurrentSettings() {
       try {
         const res = await fetch("/users/mypage", {
@@ -169,7 +168,7 @@
 
         if (res.status === 401) {
           alert("로그인이 필요합니다.");
-          window.location.href = "login.html";
+          window.location.href = "/users/login-page";
           return;
         }
 
@@ -186,7 +185,6 @@
     loadCurrentSettings();
 
     document.getElementById("save-btn").addEventListener("click", async () => {
-      // 에러 초기화
       document.getElementById("goal-error").textContent = "";
       document.getElementById("focus-error").textContent = "";
       document.getElementById("break-error").textContent = "";
@@ -197,7 +195,6 @@
       const default_break_time = parseInt(document.getElementById("break-time").value);
       const ai_mode = document.getElementById("ai-mode").value;
 
-      // 프론트 유효성 검사
       let valid = true;
 
       if (!goal_minutes || goal_minutes <= 0) {
@@ -230,7 +227,7 @@
         if (res.ok) {
           document.getElementById("success-msg").textContent = "설정이 저장되었습니다!";
           setTimeout(() => {
-            window.location.href = "mypage.html";
+            window.location.href = "/users/mypage-page";
           }, 1200);
         } else {
           document.getElementById("success-msg").style.color = "#e57373";
@@ -243,7 +240,7 @@
     });
 
     document.getElementById("back-btn").addEventListener("click", () => {
-      window.location.href = "mypage.html";
+      window.location.href = "/users/mypage-page";
     });
   </script>
 </body>
