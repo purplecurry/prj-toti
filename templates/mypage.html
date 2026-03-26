@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>마이페이지 - Toti</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #f5f5f5;
+      font-family: sans-serif;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 40px 36px;
+      width: 400px;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      font-size: 1.6em;
+      color: #333;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+
+    .info-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .info-label {
+      font-size: 0.9em;
+      color: #777;
+    }
+
+    .info-value {
+      font-size: 1em;
+      color: #333;
+      font-weight: bold;
+    }
+
+    .menu-btn {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border: none;
+      border-bottom: 1px solid #eee;
+      background: none;
+      cursor: pointer;
+      font-size: 1em;
+      color: #333;
+      transition: color 0.2s;
+    }
+
+    .menu-btn:hover {
+      color: #e57373;
+    }
+
+    .menu-btn .arrow {
+      font-size: 0.85em;
+      color: #aaa;
+      transition: transform 0.2s;
+    }
+
+    .menu-btn.open .arrow {
+      transform: rotate(90deg);
+    }
+
+    /* 설정 토글 영역 */
+    .settings-panel {
+      display: none;
+      background: #f9f9f9;
+      border: 1px solid #eee;
+      border-radius: 6px;
+      padding: 14px 16px;
+      margin-top: 6px;
+      margin-bottom: 6px;
+    }
+
+    .settings-panel.open {
+      display: block;
+    }
+
+    .settings-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 0.9em;
+      color: #555;
+    }
+
+    .settings-item:last-of-type {
+      border-bottom: none;
+    }
+
+    .settings-item span:last-child {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .edit-btn {
+      width: 100%;
+      padding: 10px;
+      margin-top: 12px;
+      background: #e57373;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9em;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .edit-btn:hover {
+      background: #ef9a9a;
+    }
+
+    .btn-logout {
+      width: 100%;
+      padding: 12px;
+      background: #f0f0f0;
+      color: #e57373;
+      border: 1px solid #e57373;
+      border-radius: 6px;
+      font-size: 0.95em;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background 0.2s;
+    }
+
+    .btn-logout:hover {
+      background: #fdecea;
+    }
+
+    .loading {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.95em;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>마이페이지</h1>
+
+    <div id="user-info">
+      <div class="loading">불러오는 중...</div>
+    </div>
+
+    <button class="btn-logout" id="logout-btn">로그아웃</button>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("access_token");
+
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      window.location.href = "login.html";
+    }
+
+    async function loadMypage() {
+      try {
+        const res = await fetch("/users/mypage", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (res.status === 401) {
+          alert("로그인이 필요합니다.");
+          window.location.href = "login.html";
+          return;
+        }
+
+        const data = await res.json();
+
+        document.getElementById("user-info").innerHTML = `
+          <!-- 이메일 -->
+          <div class="info-group">
+            <span class="info-label">이메일</span>
+            <span class="info-value">${data.email}</span>
+          </div>
+
+          <!-- 닉네임 -->
+          <div class="info-group">
+            <span class="info-label">닉네임</span>
+            <span class="info-value">${data.nickname}</span>
+          </div>
+
+          <!-- 통계 보기 버튼 -->
+          <button class="menu-btn" id="stats-btn">
+            <span>통계 보기</span>
+            <span class="arrow">▶</span>
+          </button>
+
+          <!-- 설정 버튼 + 토글 패널 -->
+          <button class="menu-btn" id="settings-toggle-btn">
+            <span>설정</span>
+            <span class="arrow">▶</span>
+          </button>
+          <div class="settings-panel" id="settings-panel">
+            <div class="settings-item">
+              <span>목표 시간</span>
+              <span>${data.goal_minutes}분</span>
+            </div>
+            <div class="settings-item">
+              <span>기본 집중 시간</span>
+              <span>${data.default_focus_time}분</span>
+            </div>
+            <div class="settings-item">
+              <span>기본 휴식 시간</span>
+              <span>${data.default_break_time}분</span>
+            </div>
+            <div class="settings-item">
+              <span>AI 모드</span>
+              <span>${data.ai_mode || "-"}</span>
+            </div>
+            <button class="edit-btn" id="go-settings-btn">설정 수정하기</button>
+          </div>
+        `;
+
+        // 통계 보기 버튼
+        document.getElementById("stats-btn").addEventListener("click", () => {
+          // 추후 통계 페이지 연결 예정
+          alert("통계 페이지는 준비 중입니다.");
+        });
+
+        // 설정 토글 버튼
+        const settingsToggleBtn = document.getElementById("settings-toggle-btn");
+        const settingsPanel = document.getElementById("settings-panel");
+
+        settingsToggleBtn.addEventListener("click", () => {
+          settingsToggleBtn.classList.toggle("open");
+          settingsPanel.classList.toggle("open");
+        });
+
+        // 설정 수정 버튼
+        document.getElementById("go-settings-btn").addEventListener("click", () => {
+          window.location.href = "settings.html";
+        });
+
+      } catch (err) {
+        console.error("마이페이지 불러오기 실패", err);
+        alert("서버와 연결할 수 없습니다.");
+      }
+    }
+
+    loadMypage();
+
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      localStorage.removeItem("access_token");
+      window.location.href = "login.html";
+    });
+  </script>
+</body>
+</html>
