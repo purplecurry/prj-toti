@@ -11,12 +11,9 @@ from pydantic import BaseModel
 from typing import Optional
 import os
 from .db import get_db, User, Memo, PomodoroSession, SessionDetail
-from .user import SECRET_KEY, ALGORITHM
+from .user import SECRET_KEY, ALGORITHM, oauth2_scheme
 
 router = APIRouter(prefix="/timer")
-
-# 로그인 확인 분기용 스키마. user와 달리 로그인이 필수가 아닌 영역들이 있음
-optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login", auto_error=False)
 
 # =====pydantic=====
 class SessionResult(BaseModel):
@@ -30,32 +27,31 @@ class MemoWrite(BaseModel):
     content: str
 
 # =======유틸========
-
 async def get_user_from_token(
-    token: str | None = Depends(optional_oauth2_scheme),
+    token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db)
-) -> User | None:
-    
-    # 토큰이 아예 없으면 (비로그인) 즉시 None 반환
+) -> User:
     if not token:
-        return None
-        
+        # 토큰이 없으면 바로 401
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
     try:
-        # 2. 직접 토큰 복호화 (다른 사람 코드 의존성 제거)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("user_id")
-        
+
         if user_id is None:
-            return None
-            
-        # 3. DB에서 유저 조회
+            raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
         result = await db.execute(select(User).filter(User.id == user_id))
         user = result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
         return user
-        
-    except (JWTError, HTTPException):
-        # 토큰 변조, 만료 등 어떤 에러가 나도 비로그인 취급(None)
-        return None
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
 
 # ====엔드포인트====
 
@@ -68,16 +64,7 @@ async def timer_page():
 # 모바일 페이지 욕심을 위한 api 분리
 @router.get("/api/timer-data")
 async def timer_data(current_user=Depends(get_user_from_token), db: AsyncSession=Depends(get_db)):
-    if not current_user:
-        # 로그인 안 된 경우에도 JSON으로 응답
-        return {
-            "logged_in": False,
-            "focus_time": 25,
-            "break_time": 5,
-            "memos": []
-        }
-
-    # 로그인된 경우
+    # 여기서는 로그인 필수 → 로그인 안 된 경우 이미 401 반환됨
     result = await db.execute(
         select(Memo.id, Memo.title).filter(Memo.user_id == current_user.id)
     )
@@ -121,6 +108,24 @@ async def memo_write(body=MemoWrite, current_user=Depends(get_user_from_token), 
     await db.refresh(memo)
     return {"message":"메모 저장 완료!", "memo": {"id": memo.id, "title": memo.title, "content": memo.content}}
 
+#메모 삭제
+@router.delete("/memo/{memo_id}")
+async def memo_delete(memo_id: int, current_user=Depends(get_user_from_token), db: AsyncSession=Depends(get_db)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+    result = await db.execute(
+        select(Memo).filter(Memo.id == memo_id, Memo.user_id == current_user.id)
+    )
+    memo = result.scalar_one_or_none()
+
+    if not memo:
+        raise HTTPException(status_code=404, detail="메모를 찾을 수 없습니다.")
+
+    await db.delete(memo)
+    await db.commit()
+
+    return {"message": "메모 삭제 완료!", "id": memo_id}
 
 #프론트에서 메모 타이틀 클릭시 해당 메모 content 호출
 @router.get("/memo/{memo_id}")
