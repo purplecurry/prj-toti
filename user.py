@@ -8,7 +8,7 @@ from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta, timezone
 import os
 
-from db import get_db, User
+from db import get_db_session, User
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -54,7 +54,7 @@ def create_access_token(data: dict):
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db_session)
 ):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -71,7 +71,7 @@ async def get_current_user(
 
 # 회원가입
 @router.post("/signup")
-async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db)):
+async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db_session)):
 
     result = await db.execute(select(User).filter(User.email == body.email))
     existing_user = result.scalar_one_or_none()
@@ -97,7 +97,7 @@ async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db)):
 
 # 로그인
 @router.post("/login")
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(body: LoginRequest, db: AsyncSession = Depends(get_db_session)):
 
     result = await db.execute(select(User).filter(User.email == body.email))
     user = result.scalar_one_or_none()
@@ -114,7 +114,7 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
 @router.get("/mypage")
 async def mypage(
     user_id: int = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db_session)
 ):
     result = await db.execute(select(User).filter(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -139,7 +139,7 @@ async def mypage(
 async def update_settings(
     body: SettingsRequest,
     user_id: int = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db_session)
 ):
     result = await db.execute(select(User).filter(User.id == user_id))
     user = result.scalar_one_or_none()
