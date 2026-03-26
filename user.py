@@ -118,11 +118,6 @@ async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db)):
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already exists")
 
-    # 닉네임 중복 확인 (db.py에 unique=True 추가됨)
-    result = await db.execute(select(User).filter(User.nickname == body.nickname))
-    if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Nickname already exists")
-
     try:
         new_user = User(
             email=body.email,
@@ -134,7 +129,7 @@ async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db)):
         await db.refresh(new_user)
     except IntegrityError:
         await db.rollback()
-        raise HTTPException(status_code=400, detail="Email or nickname already exists")
+        raise HTTPException(status_code=400, detail="Email already exists")
 
     return SignupResponse(
         message="signup success",
