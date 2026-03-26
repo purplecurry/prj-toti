@@ -35,7 +35,7 @@ class User(Base):                                                 # 유저 테�
     id = Column(Integer, primary_key=True)
     email = Column(String(100), unique=True, nullable=False)
     password = Column(String(200), nullable=False)
-    nickname = Column(String(50), unique=True, nullable=False)
+    nickname = Column(String(50), nullable=False)
     goal_minutes = Column(Integer, default=120)
     default_focus_time = Column(Integer, default=25)
     default_break_time = Column(Integer, default=5)
