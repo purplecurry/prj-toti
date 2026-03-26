@@ -10,8 +10,8 @@ from datetime import date, datetime
 from pydantic import BaseModel
 from typing import Optional
 import os
-from .db import get_db, User, Memo, PomodoroSession, SessionDetail
-from .user import SECRET_KEY, ALGORITHM, oauth2_scheme
+from db import get_db, User, Memo, PomodoroSession, SessionDetail
+from user import SECRET_KEY, ALGORITHM, oauth2_scheme
 
 router = APIRouter(prefix="/timer")
 
@@ -27,31 +27,58 @@ class MemoWrite(BaseModel):
     content: str
 
 # =======유틸========
+
+
+# async def get_user_from_token(
+#     token: str = Depends(oauth2_scheme),
+#     db: AsyncSession = Depends(get_db)
+# ) -> User:
+#     if not token:
+#         # 토큰이 없으면 바로 401
+#         raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+#     try:
+#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+#         user_id = payload.get("user_id")
+
+#         if user_id is None:
+#             raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+#         result = await db.execute(select(User).filter(User.id == user_id))
+#         user = result.scalar_one_or_none()
+
+#         if not user:
+#             raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+#         return user
+
+#     except JWTError:
+#         raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+# 임시 테스트용
 async def get_user_from_token(
-    token: str = Depends(oauth2_scheme),
+    token: str | None = None,   # 토큰 무시
     db: AsyncSession = Depends(get_db)
 ) -> User:
-    if not token:
-        # 토큰이 없으면 바로 401
-        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+    # 임시로 항상 첫 번째 유저 반환
+    result = await db.execute(select(User).limit(1))
+    user = result.scalar_one_or_none()
+    if user:
+        await db.refresh(user)
+    if not user:
+        # 유저가 없으면 테스트용 더미 유저 생성
+        user = User(
+            email="test@example.com",
+            password="1234",
+            nickname="tester"
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
 
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
+    return user
 
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
 
-        result = await db.execute(select(User).filter(User.id == user_id))
-        user = result.scalar_one_or_none()
-
-        if not user:
-            raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
-
-        return user
-
-    except JWTError:
-        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
 
 # ====엔드포인트====
 
@@ -63,23 +90,27 @@ async def timer_page():
 
 # 모바일 페이지 욕심을 위한 api 분리
 @router.get("/api/timer-data")
-async def timer_data(current_user=Depends(get_user_from_token), db: AsyncSession=Depends(get_db)):
+async def timer_data(current_user:User=Depends(get_user_from_token), db: AsyncSession=Depends(get_db)):
     # 여기서는 로그인 필수 → 로그인 안 된 경우 이미 401 반환됨
-    result = await db.execute(
-        select(Memo.id, Memo.title).filter(Memo.user_id == current_user.id)
-    )
-    memos = [{"id": m.id, "title": m.title} for m in result.all()]
-
     return {
         "logged_in": True,
         "focus_time": current_user.default_focus_time,
         "break_time": current_user.default_break_time,
-        "memos": memos
     }
+
+@router.get("/api/memos")
+async def memos_data(current_user: User = Depends(get_user_from_token), db: AsyncSession=Depends(get_db)):
+    result = await db.execute(
+        select(Memo.id, Memo.title).filter(Memo.user_id == current_user.id)
+    )
+    rows = result.mappings().all()
+    memos = [{"id": row["id"], "title": row["title"]} for row in rows]
+    return {"memos": memos}
+
 
 #메모 저장시 신규 작성 혹은 수정
 @router.put("/memo/write")
-async def memo_write(body=MemoWrite, current_user=Depends(get_user_from_token), db: AsyncSession=Depends(get_db)):
+async def memo_write(body:MemoWrite, current_user=Depends(get_user_from_token), db: AsyncSession=Depends(get_db)):
 
     if not current_user:
         raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
@@ -143,7 +174,7 @@ async def memo_content(memo_id: int, current_user=Depends(get_user_from_token), 
 
 #프론트에서 타이머 종료시 해당 세션 저장
 @router.post("/session-end")
-async def session_end(body=SessionResult, current_user=Depends(get_user_from_token), db: AsyncSession=Depends(get_db)):
+async def session_end(body:SessionResult, current_user=Depends(get_user_from_token), db: AsyncSession=Depends(get_db)):
 
     if not current_user:
         raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
