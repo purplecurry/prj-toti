@@ -2,7 +2,7 @@ from fastapi import FastAPI, APIRouter, Request
 from fastapi.responses import RedirectResponse
 from contextlib import asynccontextmanager
 from fastapi.templating import Jinja2Templates
-import ai_service, my_calendar, db, timer, user, stats, templates
+import ai_service, my_calendar, db, timer, user, stats
 
 
 @asynccontextmanager
@@ -19,8 +19,8 @@ app.include_router(timer.router)
 app.include_router(user.router)
 app.include_router(stats.router)
 app.include_router(stats.stats_router)
-app.include_router(templates.router)
+
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/templates/timer")
+    return RedirectResponse(url="/timer")

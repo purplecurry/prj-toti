@@ -273,33 +273,48 @@
   <!-- 우측 상단 버튼 -->
   <div class="top-right-buttons">
     <!-- 마이페이지 버튼 -->
-    <button class="circle-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
-        <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/>
+    <button class="circle-btn" id="mypage-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 
+                2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 
+                5v3h20v-3c0-3.3-6.7-5-10-5z"/>
       </svg>
     </button>
 
     <!-- 캘린더 버튼 -->
-    <button class="circle-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
-        <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 
-                2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 
-                2-2V6c0-1.1-.9-2-2-2zm0 
+    <button class="circle-btn" id="calendar-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 
+                .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 
+                2-.9 2-2V6c0-1.1-.9-2-2-2zm0 
                 16H5V9h14v11z"/>
       </svg>
     </button>
 
-    <!-- 메모 박스 열고 닫기 버튼 -->
-    <button class="circle-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
-        <path d="M3 4v16h18V4H3zm16 14H5V6h14v12zM7 8h10v2H7V8zm0 4h10v2H7v-2z"/>
+    <!-- 메모 버튼 -->
+    <button class="circle-btn" id="memo-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M3 4v16h18V4H3zm16 14H5V6h14v12zM7 
+                8h10v2H7V8zm0 4h10v2H7v-2z"/>
       </svg>
     </button>
 
     <!-- BGM 버튼 -->
-    <button class="circle-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
-        <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/>
+    <button class="circle-btn" id="bgm-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M12 3v10.55A4 4 0 1 0 14 
+                17V7h4V3h-6z"/>
+      </svg>
+    </button>
+
+    <!-- 로그인/로그아웃 버튼 -->
+    <button class="circle-btn" id="login-btn">
+      <!-- 기본은 로그인 아이콘 -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M10 17l5-5-5-5v10zm9-12H9c-1.1 
+                0-2 .9-2 2v3h2V7h10v10H9v-3H7v3c0 
+                1.1.9 2 2 2h10c1.1 0 2-.9 
+                2-2V7c0-1.1-.9-2-2-2z"/>
       </svg>
     </button>
   </div>
@@ -372,26 +387,17 @@
     const focusCircumference = 2 * Math.PI * 100; // r=100
     const breakCircumference = 2 * Math.PI * 90;  // r=90
 
-    // 서버에서 값 가져오기
-    async function loadTimerData() {
-      try {
-        const res = await fetch("/timer/api/timer-data", { credentials: "include" });
-        if (!res.ok) return;
-        const data = await res.json();
-        focusTime = data.focus_time;
-        breakTime = data.break_time;
-        document.getElementById("focus-input").value = focusTime;
-        document.getElementById("break-input").value = breakTime;
-      } catch (err) {
-        console.error("타이머 데이터 불러오기 실패", err);
-      }
-    }
-    // 페이지 로드 시 실행
-    loadTimerData();
+
 
 async function loadMemos() {
   try {
-    const res = await fetch("/timer/api/memos", { credentials: "include" });
+    const token = localStorage.getItem("access_token");
+
+    const res = await fetch("/timer/api/memos", {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
     if (!res.ok) return;
     const data = await res.json();
 
@@ -445,17 +451,66 @@ async function loadMemos() {
         </svg>`;
     }
 
-    function updateDisplays() {
-      focusDisplay.textContent = formatTime(focusTime * 60);
-      breakDisplay.textContent = formatTime(breakTime * 60);
-      counterDisplay.textContent = `${currentCount}/${totalCount}`;
-    }
-
+    // 시간 포맷 함수
     function formatTime(seconds) {
       const m = String(Math.floor(seconds / 60)).padStart(2, "0");
       const s = String(seconds % 60).padStart(2, "0");
       return `${m}:${s}`;
     }
+    
+    // 입력창 변수 선언 (아랫부분에서 추가)
+    const focusInput = document.getElementById("focus-input");
+    const breakInput = document.getElementById("break-input");
+    const countInput = document.getElementById("count-input");
+
+
+    // 표시 업데이트 함수
+    function updateDisplays() {
+      focusTime = parseInt(focusInput.value) || 0;
+      breakTime = parseInt(breakInput.value) || 0;
+      totalCount = parseInt(countInput.value) || 0;
+      currentCount = 0;
+
+      focusDisplay.textContent = formatTime(focusTime * 60);
+      breakDisplay.textContent = formatTime(breakTime * 60);
+      counterDisplay.textContent = `${currentCount}/${totalCount}`;
+    }
+
+    // 입력값 변경 시 즉시 반영
+    focusInput.addEventListener("input", updateDisplays);
+    breakInput.addEventListener("input", updateDisplays);
+    countInput.addEventListener("input", updateDisplays);
+
+    // 서버에서 값 가져오기
+    async function loadTimerData() {
+      try {
+        const token = localStorage.getItem("access_token");
+        const res = await fetch("/timer/api/timer-data", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 서버 값 반영
+        focusTime = data.focus_time;
+        breakTime = data.break_time;
+
+        // 입력창에 값 넣기
+        document.getElementById("focus-input").value = focusTime;
+        document.getElementById("break-input").value = breakTime;
+
+        // 표시 업데이트 호출
+        updateDisplays();
+      } catch (err) {
+        console.error("타이머 데이터 불러오기 실패", err);
+      }
+    }
+
+    // 초기 표시
+    updateDisplays();
+
+    // 페이지 로드 시 서버 값 불러오기
+    loadTimerData();
 
     function updateProgress() {
       if (isFocus) {
@@ -553,77 +608,61 @@ async function loadMemos() {
     const memoToggleBtn = document.querySelector(".top-right-buttons .circle-btn:nth-child(3)");
     const memoBox = document.getElementById("memo-box");
 
-    // 공통 로그인 체크 함수
-    async function checkLogin() {
-      try {
-        const res = await fetch("/timer/api/timer-data");
-        if (!res.ok) return false; // 401 등 비로그인 상태
-        const data = await res.json();
-        return data.logged_in;
-      } catch (err) {
-        console.error(err);
-        alert("서버와 연결할 수 없습니다.");
-        return false;
-      }
+// 공통 로그인 체크 함수
+async function ensureLogin() {
+  try {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      const goLogin = confirm("로그인이 필요합니다");
+      if (goLogin) window.location.href = "/users/login-page";
+      return false;
     }
+
+    const res = await fetch("/timer/api/timer-data", {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      const goLogin = confirm("로그인이 필요합니다");
+      if (goLogin) window.location.href = "/users/login-page";
+      return false;
+    }
+
+    return true; // 로그인 성공
+  } catch (err) {
+    console.error("서버 연결 실패", err);
+    alert("서버와 연결할 수 없습니다.");
+    return false;
+  }
+}
 
     // 마이페이지 버튼
     mypageBtn.addEventListener("click", async () => {
-      const loggedIn = await checkLogin();
-      if (!loggedIn) {
-        const goLogin = confirm("로그인이 필요합니다");
-        if (goLogin) window.location.href = "/templates/login.html";
-        return;
-      }
-      window.location.href = "/templates/mypage.html";
+      const loggedIn = await ensureLogin();
+      if (!loggedIn) return;
+      window.location.href = "/users/mypage-page";
     });
 
     // 캘린더 버튼
     calendarBtn.addEventListener("click", async () => {
-      const loggedIn = await checkLogin();
-      if (!loggedIn) {
-        const goLogin = confirm("로그인이 필요합니다");
-        if (goLogin) window.location.href = "/templates/login.html";
-        return;
-      }
-      window.location.href = "/templates/mycalendar.html";
+      const loggedIn = await ensureLogin();
+      if (!loggedIn) return;
+      window.location.href = "/templates/mycalendar";
     });
 
-    // 메모 버튼, 로그인 기능 작동시 아래의 비로그인 영역과 교체
+    // 메모 버튼
     memoToggleBtn.addEventListener("click", async () => {
-      try {
-        const res = await fetch("/timer/api/timer-data", { credentials: "include" });
+      const loggedIn = await ensureLogin();
+      if (!loggedIn) return;
 
-        if (!res.ok) {
-          // 로그인 안 된 상태 → confirm 띄우기
-          const goLogin = confirm("로그인이 필요합니다");
-          if (goLogin) {
-            window.location.href = "/templates/login.html";
-          }
-          return;
-        }
-
-        const data = await res.json();
-
-        if (!data.logged_in) {
-          const goLogin = confirm("로그인이 필요합니다");
-          if (goLogin) {
-            window.location.href = "/templates/login.html";
-          }
-          return;
-        }
-
-        // 로그인된 상태 → 메모 박스 토글
-        if (memoBox.style.display === "none" || memoBox.style.display === "") {
-          memoBox.style.display = "block";
-          loadMemos(); // 박스 열릴 때 메모 목록 불러오기
-        } else {
-          memoBox.style.display = "none";
-        }
-
-      } catch (err) {
-        console.error("서버 연결 실패", err);
-        alert("서버와 연결할 수 없습니다.");
+      // 로그인된 상태 → 메모 박스 토글
+      if (memoBox.style.display === "none" || memoBox.style.display === "") {
+        memoBox.style.display = "block";
+        loadMemos(); // 박스 열릴 때 메모 목록 불러오기
+      } else {
+        memoBox.style.display = "none";
       }
     });
 
@@ -691,8 +730,9 @@ async function loadMemos() {
       editBtn.click();
     });
 
-    // 메모 이벤트 연결
-    function attachMemoEvents(memoItem, isNew = true) {
+
+// 메모 이벤트 연결
+function attachMemoEvents(memoItem, isNew = true) {
   const title = memoItem.querySelector(".memo-title span");
   const body = memoItem.querySelector(".memo-body");
   const editBtn = memoItem.querySelector(".edit-btn");
@@ -707,14 +747,18 @@ async function loadMemos() {
   title.addEventListener("click", async () => {
     if (editBtn.textContent === "✏️") {
       if (body.style.display === "none" || body.style.display === "") {
-        // 서버에서 내용 불러오기
         const memoId = memoItem.dataset.id;
         if (memoId) {
           try {
-            const res = await fetch(`/timer/memo/${memoId}`, { credentials: "include" });
+            const token = localStorage.getItem("access_token");
+            const res = await fetch(`/timer/memo/${memoId}`, {
+              headers: { "Authorization": `Bearer ${token}` }
+            });
             if (res.ok) {
               const memoData = await res.json();
-              body.textContent = memoData.content;
+              body.textContent = memoData.content; // 서버에서 실제 내용 불러오기
+            } else {
+              console.error("메모 내용 불러오기 실패", await res.text());
             }
           } catch (err) {
             console.error("메모 불러오기 실패", err);
@@ -742,9 +786,13 @@ async function loadMemos() {
       body.style.display = "block";
 
       try {
+        const token = localStorage.getItem("access_token");
         const res = await fetch("/timer/memo/write", {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
           body: JSON.stringify({
             id: memoItem.dataset.id || null,
             title: title.textContent,
@@ -773,7 +821,11 @@ async function loadMemos() {
       return;
     }
     try {
-      const res = await fetch(`/timer/memo/${memoId}`, { method: "DELETE" });
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`/timer/memo/${memoId}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
       if (res.ok) {
         alert("메모 삭제 완료!");
         memoItem.remove();
@@ -820,8 +872,54 @@ async function loadMemos() {
       }
     }
 
-    
-    
+  const loginBtn = document.getElementById("login-btn");
+
+// 로그인/로그아웃 버튼 상태 업데이트
+function updateLoginButton() {
+  const token = localStorage.getItem("access_token");
+  if (token) {
+    // 로그인 상태 → 로그아웃 아이콘
+    loginBtn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M16 13v-2H7V7l-5 5 5 5v-4h9zm3-10H5c-1.1 
+                 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 
+                 1.1.9 2 2 2h14c1.1 0 2-.9 
+                 2-2V5c0-1.1-.9-2-2-2z"/>
+      </svg>
+    `;
+  } else {
+    // 로그아웃 상태 → 로그인 아이콘
+    loginBtn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M10 17l5-5-5-5v10zm9-12H9c-1.1 
+                 0-2 .9-2 2v3h2V7h10v10H9v-3H7v3c0 
+                 1.1.9 2 2 2h10c1.1 0 2-.9 
+                 2-2V7c0-1.1-.9-2-2-2z"/>
+      </svg>
+    `;
+  }
+}
+
+  // 버튼 클릭 이벤트
+  loginBtn.addEventListener("click", () => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      // 로그인 상태 → 로그아웃 확인
+      const confirmLogout = confirm("로그아웃 하시겠습니까?");
+      if (confirmLogout) {
+        localStorage.removeItem("access_token");
+        updateLoginButton();
+        alert("로그아웃 되었습니다.");
+      }
+    } else {
+      // 로그아웃 상태 → 로그인 페이지로 이동
+      window.location.href = "/users/login-page";
+    }
+  });
+
+  // 페이지 로드 시 상태 업데이트
+  updateLoginButton();
+
 
   </script>
 </body>

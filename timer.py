@@ -82,7 +82,7 @@ async def get_user_from_token(
 
 # ====엔드포인트====
 
-# 이틀 페이지(타이머)
+# 타이틀 페이지(타이머)
 @router.get("/")
 async def timer_page():
     file_path = os.path.join("templates","timer.html")

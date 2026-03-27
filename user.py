@@ -180,7 +180,7 @@ async def mypage(user: User = Depends(get_current_user)):
         goal_minutes=user.goal_minutes,
         default_focus_time=user.default_focus_time,
         default_break_time=user.default_break_time,
-        ai_mode=user.ai_mode,
+        ai_mode=user.ai_mode or "-",
         created_at=user.created_at.isoformat()
     )
 
