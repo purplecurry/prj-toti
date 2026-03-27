@@ -18,14 +18,31 @@ async def create_session(
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    record = StudyRecord(
-        user_id=current_user.id,
-        date=target_date,
-        total_minutes=total_minutes,
-        completed_sessions=completed_sessions,
-        goal_achieved=goal_achieved
+    # 오늘 날짜 기록이 이미 있는지 먼저 확인
+    result = await db.execute(
+        select(StudyRecord).where(
+            StudyRecord.user_id == current_user.id,
+            StudyRecord.date == target_date
+        )
     )
-    db.add(record)
+    record = result.scalars().first()
+
+    if record:
+        # 이미 있으면 업데이트
+        record.total_minutes = total_minutes
+        record.completed_sessions = completed_sessions
+        record.goal_achieved = goal_achieved
+    else:
+        # 없으면 새로 생성
+        record = StudyRecord(
+            user_id=current_user.id,
+            date=target_date,
+            total_minutes=total_minutes,
+            completed_sessions=completed_sessions,
+            goal_achieved=goal_achieved
+        )
+        db.add(record)
+
     await db.commit()
     return {"message": "저장 완료"}
 
