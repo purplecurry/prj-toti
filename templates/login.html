@@ -121,7 +121,7 @@
     <button class="btn" id="login-btn">로그인</button>
 
     <div class="signup-link">
-      계정이 없으신가요? <a href="signup.html">회원가입</a>
+      계정이 없으신가요? <a href="/users/signup-page">회원가입</a>
     </div>
   </div>
 
@@ -149,7 +149,6 @@
         const data = await res.json();
 
         if (res.ok) {
-          // 토큰 저장
           localStorage.setItem("access_token", data.access_token);
           window.location.href = "/timer";
         } else {
@@ -161,7 +160,6 @@
       }
     });
 
-    // 엔터키 제출
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") loginBtn.click();
     });
