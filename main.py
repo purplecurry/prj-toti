@@ -1,36 +1,44 @@
+<<<<<<< Updated upstream
 from fastapi import FastAPI, APIRouter, Request
 from fastapi.responses import RedirectResponse
 from contextlib import asynccontextmanager
 from fastapi.templating import Jinja2Templates
 import ai_service, my_calendar, db, timer, user, stats
 
+=======
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from db import engine, get_db 
+import models
+import my_calendar  # 1. 캘린더 파일 가져오기
+>>>>>>> Stashed changes
 
 @asynccontextmanager
-async def app_life_span(app: FastAPI):
-    # 비동기 엔진으로 테이블을 생성하는 올바른 방법입니다
-    async with db.engine.begin() as conn:
-        await conn.run_sync(db.Base.metadata.create_all)
+async def lifespan(app: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(models.Base.metadata.create_all)
     yield
-from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(lifespan=app_life_span)
+app = FastAPI(lifespan=lifespan)
 
-# app = FastAPI() 바로 밑에 추가
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # 모든 곳에서 접속 허용 (개발용)
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(timer.router)
+# 2. 여기에 캘린더 라우터를 등록합니다! (가장 중요)
 app.include_router(my_calendar.router)
-app.include_router(ai_service.router)
-app.include_router(user.router)
-app.include_router(stats.router)
-app.include_router(stats.stats_router)
 
 @app.get("/")
 async def root():
+<<<<<<< Updated upstream
     return RedirectResponse(url="/timer")
+=======
+    return {"message": "Tomato Project API is Running!"}
+
+# 기존의 @app.post("/memo") 등 동제님 코드는 이 아래에 그대로 두시면 됩니다.
+>>>>>>> Stashed changes

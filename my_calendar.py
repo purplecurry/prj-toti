@@ -6,7 +6,7 @@ from sqlalchemy import select
 from db import get_db
 from models import Todo, StudyRecord  # 1단계에서 만든 모델 가져오기
 
-router = APIRouter()
+router = APIRouter(prefix="/calendar", tags=["Calendar"])
 
 @router.get("/calendar")
 async def get_calendar():
@@ -39,15 +39,9 @@ async def get_daily_info(date: str, db: AsyncSession = Depends(get_db)):
 async def add_todo(content: str, date: str, db: AsyncSession = Depends(get_db)):
     # 2단계: 진짜 DB 객체 생성
     new_todo = Todo(content=content, date=date, user_id=1) 
-    
-    db.add(new_todo)          # DB 장부에 적기
-    await db.commit()         # 장부 확정(저장)!
-    await db.refresh(new_todo) # 저장된 내용 다시 확인
-    
-    return {
-        "message": "DB 저장 완료",
-        "data": new_todo
-    }
+    db.add(new_todo)
+    await db.commit() # 반드시 await가 있어야 진짜 저장이 됩니다!
+    return {"message": "저장 성공"}
 
 # 4. 진짜 학습 시간 기록 (DB 저장 적용)
 @router.post("/study-record")
