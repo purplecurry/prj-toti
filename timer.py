@@ -207,4 +207,3 @@ async def session_end(body:SessionResult, current_user=Depends(get_user_from_tok
     await db.refresh(pomodoro_session)
     
     return Response(status_code=204)
-
