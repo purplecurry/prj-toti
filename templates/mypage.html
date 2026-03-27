@@ -36,6 +36,50 @@
       text-align: center;
     }
 
+    /* 레벨/경험치 영역 */
+    .level-box {
+      background: #fdecea;
+      border: 1px solid #e57373;
+      border-radius: 6px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .level-title {
+      font-size: 0.85em;
+      color: #e57373;
+      margin-bottom: 4px;
+    }
+
+    .level-value {
+      font-size: 1.8em;
+      font-weight: bold;
+      color: #e57373;
+      margin-bottom: 10px;
+    }
+
+    .exp-text {
+      font-size: 0.85em;
+      color: #777;
+      margin-bottom: 6px;
+    }
+
+    .progress-bar-wrap {
+      background: #f0f0f0;
+      border-radius: 999px;
+      height: 10px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: #e57373;
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    /* 정보 영역 */
     .info-group {
       display: flex;
       justify-content: space-between;
@@ -192,19 +236,40 @@
 
         const data = await res.json();
 
+        // 경험치 진행도 계산 (100분 = 레벨 1)
+        const expInLevel = data.experience % 100;
+        const expPercent = expInLevel;
+
         document.getElementById("user-info").innerHTML = `
+          <!-- 레벨/경험치 -->
+          <div class="level-box">
+            <div class="level-title">현재 레벨</div>
+            <div class="level-value">Lv. ${data.level}</div>
+            <div class="exp-text">경험치 ${expInLevel} / 100</div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar" style="width: ${expPercent}%"></div>
+            </div>
+          </div>
+
+          <!-- 이메일 -->
           <div class="info-group">
             <span class="info-label">이메일</span>
             <span class="info-value">${data.email}</span>
           </div>
+
+          <!-- 닉네임 -->
           <div class="info-group">
             <span class="info-label">닉네임</span>
             <span class="info-value">${data.nickname}</span>
           </div>
+
+          <!-- 통계 보기 버튼 -->
           <button class="menu-btn" id="stats-btn">
             <span>통계 보기</span>
             <span class="arrow">▶</span>
           </button>
+
+          <!-- 설정 버튼 + 토글 패널 -->
           <button class="menu-btn" id="settings-toggle-btn">
             <span>설정</span>
             <span class="arrow">▶</span>
