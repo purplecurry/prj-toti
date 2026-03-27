@@ -8,7 +8,7 @@ from sqlalchemy import Column, Integer, String, Boolean, Text, Date, DateTime, F
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = "sqlite+aiosqlite:///./sql_app.db"
 
 # 비동기 엔진
 engine = create_async_engine(DATABASE_URL, echo=True)
@@ -35,7 +35,7 @@ class User(Base):                                                 # 유저 테�
     id = Column(Integer, primary_key=True)
     email = Column(String(100), unique=True, nullable=False)
     password = Column(String(200), nullable=False)
-    nickname = Column(String(50), nullable=False)
+    nickname = Column(String(50), unique=True, nullable=False)
     goal_minutes = Column(Integer, default=120)
     default_focus_time = Column(Integer, default=25)
     default_break_time = Column(Integer, default=5)

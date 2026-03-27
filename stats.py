@@ -15,11 +15,11 @@ async def create_session(
     total_minutes: int,
     completed_sessions: int,
     goal_achieved: bool,
-    current_user=Depends(get_current_user),
+    user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     record = StudyRecord(
-        user_id=current_user.id,
+        user_id=user_id,
         date=target_date,
         total_minutes=total_minutes,
         completed_sessions=completed_sessions,
@@ -33,12 +33,12 @@ async def create_session(
 @stats_router.get("/daily")
 async def get_daily_stats(
     target_date: date,
-    current_user=Depends(get_current_user),
+    user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
         select(StudyRecord).where(
-            StudyRecord.user_id == current_user.id,
+            StudyRecord.user_id == user_id,
             StudyRecord.date == target_date
         )
     )
@@ -49,12 +49,12 @@ async def get_daily_stats(
 async def get_weekly_stats(
     year: int,
     week: int,
-    current_user=Depends(get_current_user),
+    user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
         select(StudyRecord).where(
-            StudyRecord.user_id == current_user.id,
+            StudyRecord.user_id == user_id,
             extract("year", StudyRecord.date) == year,
             extract("week", StudyRecord.date) == week
         )
@@ -66,12 +66,12 @@ async def get_weekly_stats(
 async def get_monthly_stats(
     year: int,
     month: int,
-    current_user=Depends(get_current_user),
+    user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
         select(StudyRecord).where(
-            StudyRecord.user_id == current_user.id,
+            StudyRecord.user_id == user_id,
             extract("year", StudyRecord.date) == year,
             extract("month", StudyRecord.date) == month
         )
@@ -82,12 +82,12 @@ async def get_monthly_stats(
 @stats_router.get("/yearly")
 async def get_yearly_stats(
     year: int,
-    current_user=Depends(get_current_user),
+    user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
         select(StudyRecord).where(
-            StudyRecord.user_id == current_user.id,
+            StudyRecord.user_id == user_id,
             extract("year", StudyRecord.date) == year
         )
     )
