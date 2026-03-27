@@ -524,6 +524,7 @@ async function loadMemos() {
 
     function startTimer() {
       if (!isRunning) {
+        startedAt = new Date(); // 시작 시각 기록
         // 처음 시작
         focusTime = parseInt(document.getElementById("focus-input").value);
         breakTime = parseInt(document.getElementById("break-input").value);
@@ -581,15 +582,36 @@ async function loadMemos() {
       }
     }
 
-    function stopTimer() {
+    function stopTimer(isStoppedEarly = true) {
       clearInterval(timer);
       timer = null;
       isRunning = false;
       isPaused = false;
+
+      const endedAt = new Date(); // 종료 시각 기록
+
+      // duration = 집중 시간 × 횟수 (분 단위)
+      let duration = focusTime * totalCount;
+
+      // exp = 집중 × 횟수 + 휴식 × (횟수 - 1)
+      let exp = focusTime * totalCount + breakTime * (totalCount - 1);
+
+      // 중간 정지라면 진행된 시간만 exp 반영
+      if (isStoppedEarly) {
+        const totalSeconds = (focusTime * 60 * totalCount) + (breakTime * 60 * (totalCount - 1));
+        const elapsedSeconds = totalSeconds - remainingTime;
+        exp = Math.floor(elapsedSeconds / 60);
+
+        // duration도 반영
+        const elapsedFocusSeconds = Math.min(elapsedSeconds, focusTime * 60 * totalCount);
+        duration = Math.floor(elapsedFocusSeconds / 60);
+      }
+
+      sendSessionEnd(startedAt, endedAt, duration, exp);
+
       currentCount = 0;
       updateDisplays();
-      setPlayIcon(); // 항상 ▶로 초기화
-      // 원형 진행률 초기화
+      setPlayIcon();
       focusCircle.style.strokeDashoffset = focusCircumference;
       breakCircle.style.strokeDashoffset = breakCircumference;
     }
@@ -920,6 +942,26 @@ function updateLoginButton() {
   // 페이지 로드 시 상태 업데이트
   updateLoginButton();
 
+  async function sendSessionEnd(startedAt, endedAt, duration, exp) {
+    try {
+      const token = localStorage.getItem("access_token");
+      await fetch("/timer/api/session-end", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          started_at: startedAt.toISOString(),
+          ended_at: endedAt.toISOString(),
+          duration: duration,
+          exp: exp
+        })
+      });
+    } catch (err) {
+      console.error("세션 종료 전송 실패", err);
+    }
+  }
 
   </script>
 </body>

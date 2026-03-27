@@ -41,6 +41,7 @@ class User(Base):                                                 # 유저 테�
     default_break_time = Column(Integer, default=5)
     ai_mode = Column(String(20))
     created_at = Column(DateTime, default=func.now())
+    exp = Column(Integer, default=0, nullable=False)
 
 class PomodoroSession(Base):                                     # 포모도로 세션 테이블
     __tablename__ = "pomodoro_sessions"
