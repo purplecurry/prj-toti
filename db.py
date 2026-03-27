@@ -114,7 +114,7 @@ class UserTrackSetting(Base):                                    # 유저별 트
     is_checked = Column(Boolean, default=False)
     is_favorite = Column(Boolean, default=False)
     order_index = Column(Integer)
-    updated_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     __table_args__ = (
         UniqueConstraint("user_id", "track_id", name="uq_user_track"),
