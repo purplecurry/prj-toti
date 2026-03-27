@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -108,12 +109,30 @@ async def get_current_user(
     return user
 
 
+# --- 페이지 라우터 ---
+
+@router.get("/login-page")
+async def login_page():
+    return FileResponse(os.path.join("templates", "login.html"))
+
+@router.get("/signup-page")
+async def signup_page():
+    return FileResponse(os.path.join("templates", "signup.html"))
+
+@router.get("/mypage-page")
+async def mypage_page():
+    return FileResponse(os.path.join("templates", "mypage.html"))
+
+@router.get("/settings-page")
+async def settings_page():
+    return FileResponse(os.path.join("templates", "settings.html"))
+
+
 # --- 엔드포인트 ---
 
 # 회원가입
 @router.post("/signup", response_model=SignupResponse)
 async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db)):
-    # 이메일 중복 확인
     result = await db.execute(select(User).filter(User.email == body.email))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already exists")
