@@ -96,3 +96,26 @@ class AiLog(Base):                                              # AI 로그 테�
     message = Column(Text)
     mode = Column(String(20))
     created_at = Column(DateTime, default=func.now())
+
+class Track(Base):                                               # 트랙 테이블
+    __tablename__ = "track"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    title = Column(String, nullable=False)
+    file_url = Column(String, nullable=False)
+
+
+class UserTrackSetting(Base):                                    # 유저별 트랙 세팅 테이블
+    __tablename__ = "user_track_setting"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    track_id = Column(Integer, ForeignKey("track.id"), nullable=False)
+    is_checked = Column(Boolean, default=False)
+    is_favorite = Column(Boolean, default=False)
+    order_index = Column(Integer)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "track_id", name="uq_user_track"),
+    )

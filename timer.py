@@ -193,4 +193,3 @@ async def session_end(body:SessionResult, current_user=Depends(get_current_user)
     await db.refresh(current_user)
     
     return Response(status_code=204)
-
