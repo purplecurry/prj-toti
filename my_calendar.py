@@ -3,20 +3,17 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from db import get_db
-from models import Todo, StudyRecord  # 1단계에서 만든 모델 가져오기
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from db import get_db, Todo, StudyRecord, Memo
+from fastapi.responses import FileResponse
 from fastapi import Request # Depends 옆에 Request 추가
-
-templates = Jinja2Templates(directory="templates")
+import os
 
 router = APIRouter()
 
-@router.get("/calendar", response_class=HTMLResponse)
-async def get_calendar(request: Request):
-    # templates 폴더 안에 calendar.html 파일이 실제로 있어야 합니다!
-    return templates.TemplateResponse("calendar.html", {"request": request})
+@router.get("/calendar")
+async def get_calendar():
+    file_path = os.path.join("templates","calendar.html")
+    return FileResponse(file_path)
 
 # 1. 월간 요약 (나중에 DB 연동 가능)
 @router.get("/summary/{year}/{month}")
@@ -72,7 +69,6 @@ async def record_study(minutes: int, date: str, db: AsyncSession = Depends(get_d
 # 5. 메모 저장 API (캘린더용)
 @router.post("/memo")
 async def add_memo(title: str, content: str, date: str, db: AsyncSession = Depends(get_db)):
-    from models import Memo # models.py에 Memo 클래스가 있어야 합니다
     new_memo = Memo(title=title, content=content, date=date, user_id=1)
     
     db.add(new_memo)
@@ -84,7 +80,6 @@ async def add_memo(title: str, content: str, date: str, db: AsyncSession = Depen
 # 6. 특정 날짜의 메모 조회 (화면에 다시 보여주기용)
 @router.get("/memo/{date}")
 async def get_memo(date: str, db: AsyncSession = Depends(get_db)):
-    from models import Memo
     # 해당 날짜의 메모가 있는지 확인
     result = await db.execute(select(Memo).where(Memo.date == date))
     memo = result.scalars().first()

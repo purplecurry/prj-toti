@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Depends, Response
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
-from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import func
 from datetime import date, datetime
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import os
 from db import get_db, User, Memo, PomodoroSession, SessionDetail
-from user import SECRET_KEY, ALGORITHM, get_current_user
+from db import Track, UserTrackSetting
+from user import get_current_user
 
 router = APIRouter(prefix="/timer")
 
@@ -26,6 +26,17 @@ class MemoWrite(BaseModel):
     id: Optional[int] = None
     title: str
     content: str
+
+class TrackCheckUpdate(BaseModel):
+    is_checked: bool
+
+class TrackFavoriteUpdate(BaseModel):
+    is_favorite: bool
+
+class TrackOrderUpdate(BaseModel):
+    track_id: int
+    order_index: int
+
 
 # =======유틸========
 
@@ -66,8 +77,7 @@ async def timer_page():
 
 # 모바일 페이지 욕심을 위한 api 분리
 @router.get("/api/timer-data")
-async def timer_data(current_user:User=Depends(get_current_user), db: AsyncSession=Depends(get_db)):
-    # 여기서는 로그인 필수 → 로그인 안 된 경우 이미 401 반환됨
+async def timer_data(current_user:User=Depends(get_current_user)):
     return {
         "logged_in": True,
         "focus_time": current_user.default_focus_time,
@@ -193,3 +203,133 @@ async def session_end(body:SessionResult, current_user=Depends(get_current_user)
     await db.refresh(current_user)
     
     return Response(status_code=204)
+
+# 음원 불러오기
+@router.get("/tracks")
+async def load_tracks(current_user=Depends(get_current_user), db: AsyncSession=Depends(get_db)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+    user_id = current_user.id  # 미리 꺼내서 변수에 저장
+
+    # 모든 트랙 가져오기
+    all_tracks = await db.execute(select(Track))
+    all_tracks = all_tracks.scalars().all()
+
+    # 유저의 설정 가져오기
+    user_settings = await db.execute(
+        select(UserTrackSetting).filter(UserTrackSetting.user_id == user_id)
+    )
+    user_settings = user_settings.scalars().all()
+    existing_ids = {s.track_id for s in user_settings}
+
+    # 없는 track_id 자동 추가
+    for track in all_tracks:
+        if track.id not in existing_ids:
+            new_setting = UserTrackSetting(
+                user_id=user_id,
+                track_id=track.id,
+                is_checked=True,
+                is_favorite=False,
+                order_index=len(user_settings) + 1
+            )
+            db.add(new_setting)
+            user_settings.append(new_setting)
+
+    await db.commit()
+
+    # 조인해서 결과 반환
+    result = await db.execute(
+        select(UserTrackSetting, Track)
+        .join(Track, UserTrackSetting.track_id == Track.id)
+        .filter(UserTrackSetting.user_id == user_id)
+        .order_by(UserTrackSetting.order_index.asc())
+    )
+    rows = result.all()
+
+    tracks = []
+    for setting, track in rows:
+        tracks.append({
+            "id": track.id,
+            "title": track.title,
+            "file_url": track.file_url,
+            "is_checked": setting.is_checked,
+            "is_favorite": setting.is_favorite,
+            "order_index": setting.order_index,
+        })
+    return {"tracks": tracks}
+
+# 체크 상태 변경시 업데이트
+@router.put("/traks/{track_id}/check")
+async def update_track_check(track_id: int, body: TrackCheckUpdate,
+                             current_user=Depends(get_current_user),
+                             db: AsyncSession=Depends(get_db)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+    result = await db.execute(
+        select(UserTrackSetting).filter(
+            UserTrackSetting.user_id == current_user.id,
+            UserTrackSetting.track_id == track_id
+        )
+    )
+    setting = result.scalar_one_or_none()
+    if not setting:
+        raise HTTPException(status_code=404, detail="트랙 설정을 찾을 수 없습니다.")
+
+    setting.is_checked = body.is_checked
+    await db.commit()
+    await db.refresh(setting)
+
+    return {"message": "체크 업데이트 완료", "track_id": track_id, "is_checked": setting.is_checked}
+
+# 즐겨찾기 상태 변경시 업데이트
+@router.put("/traks/{track_id}/favorite")
+async def update_track_favorite(track_id: int, body: TrackFavoriteUpdate,
+                                current_user=Depends(get_current_user),
+                                db: AsyncSession=Depends(get_db)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+    result = await db.execute(
+        select(UserTrackSetting).filter(
+            UserTrackSetting.user_id == current_user.id,
+            UserTrackSetting.track_id == track_id
+        )
+    )
+    setting = result.scalar_one_or_none()
+    if not setting:
+        raise HTTPException(status_code=404, detail="트랙 설정을 찾을 수 없습니다.")
+
+    setting.is_favorite = body.is_favorite
+    await db.commit()
+    await db.refresh(setting)
+
+    return {"message": "즐겨찾기 업데이트 완료", "track_id": track_id, "is_favorite": setting.is_favorite}
+
+
+# 순서 변경시 업데이트
+@router.put("/tracks/order")
+async def update_track_order(body: List[TrackOrderUpdate],
+                             current_user=Depends(get_current_user),
+                             db: AsyncSession=Depends(get_db)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+    for item in body:
+        result = await db.execute(
+            select(UserTrackSetting).filter(
+                UserTrackSetting.user_id == current_user.id,
+                UserTrackSetting.track_id == item.track_id
+            )
+        )
+        setting = result.scalar_one_or_none()
+        if not setting:
+            raise HTTPException(status_code=404, detail=f"track_id {item.track_id}의 트랙 설정을 찾을 수 없습니다.")
+        setting.order_index = item.order_index
+
+    await db.commit()
+    return {"message": "순서 업데이트 완료", "updated": [item.model_dump() for item in body]}
+
+
+# 테스트 종료 후엔 return Response(status_code=204) 으로 바꿀것
