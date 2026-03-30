@@ -256,6 +256,135 @@
       fill: white; /* 아이콘은 흰색으로 대비 */
     }
 
+
+    /* bgm 박스 */
+    .bgm-box {
+    position: fixed;
+    top: 100px;
+    left: 100px;
+    width: 300px;
+    height: 400px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+    display: none; /* 기본은 닫혀 있음 */
+  }
+
+  .bgm-header {
+    background: #f0f0f0;
+    padding: 6px 10px;
+    cursor: move;
+    font-weight: bold;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .bgm-progress {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+  }
+
+  #progress-bar {
+    width: 100%;
+    cursor: pointer;
+  }
+
+  .time-display {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    margin-top: 4px;
+  }
+
+  .bgm-controls {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px;
+  }
+
+  .track-list {
+    height: calc(100% - 80px);
+    overflow-y: auto;
+    padding: 10px;
+  }
+
+  .track-list div {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+/* 셔플 */
+#shuffle-btn {
+  position: relative; /* ::after 기준점 */
+  font-size: 24px;
+  background: #f0f0f0; /* 원하는 배경색 */
+  border: 1px solid #ccc; /* 원하는 테두리 */
+  border-radius: 6px;     /* 둥글게 하고 싶으면 */
+  cursor: pointer;
+}
+
+#shuffle-btn.off::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: black; /* 선 색상 */
+  transform: rotate(-45deg);
+}
+
+/* 반복버튼 */
+#repeat-btn {
+  position: relative;
+  font-size: 24px;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#repeat-btn.off::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: black; /* 검은색 사선 */
+  transform: rotate(-45deg);
+}
+
+.track-item {
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 4px;
+  background: #fff;
+  transition: transform 0.2s ease; /* 부드럽게 밀려나는 효과 */
+}
+
+.drag-handle {
+  cursor: grab;
+  user-select: none;
+  margin-right: 8px;
+}
+
+.dragging {
+  opacity: 0.5;
+}
+
+.favorite {
+  cursor: pointer;   /* 별표 클릭 시 손 모양 */
+}
+
+.track-item input[type="checkbox"] {
+  cursor: pointer;   /* 체크박스도 손 모양 */
+}
   </style>
 </head>
 <body>
@@ -269,6 +398,38 @@
       <!-- 메모 항목들이 여기에 추가됨 -->
     </div>
   </div>
+
+<!-- bgm 관련 -->
+  <div id="bgm-box" class="bgm-box" style="display:none;">
+    <div id="bgm-header" class="bgm-header">
+      플레이어
+    </div>
+
+  <!-- 재생바 -->
+  <div class="bgm-progress">
+    <input type="range" id="progress-bar" value="0" min="0" max="100">
+    <div class="time-display">
+      <span id="current-time">0:00</span>
+      <span id="total-time">0:00</span>
+    </div>
+  </div>
+
+    <!-- 재생 컨트롤 바 -->
+    <div class="bgm-controls">
+      <button id="shuffle-btn">🔀</button>
+      <button id="prev-btn">⏮</button>
+      <button id="play-btn">▶</button>
+      <button id="pause-btn" style="display:none;">⏸</button>
+      <button id="next-btn">⏭</button>
+      <button id="repeat-btn">🔁</button>
+    </div>
+
+    <!-- 트랙 리스트 -->
+    <div id="track-list" class="track-list">
+      <!-- timer.py의 load_tracks 결과가 여기에 들어감 -->
+    </div>
+  </div>
+
 
   <!-- 우측 상단 버튼 -->
   <div class="top-right-buttons">
@@ -671,7 +832,7 @@ async function ensureLogin() {
     calendarBtn.addEventListener("click", async () => {
       const loggedIn = await ensureLogin();
       if (!loggedIn) return;
-      window.location.href = "/templates/mycalendar";
+      window.location.href = "/calendar";
     });
 
     // 메모 버튼
@@ -962,6 +1123,477 @@ function updateLoginButton() {
       console.error("세션 종료 전송 실패", err);
     }
   }
+
+// ==================== BGM 박스 온오프 ====================
+const bgmBox = document.getElementById("bgm-box");
+const bgmBtn = document.getElementById("bgm-btn");
+
+bgmBtn.addEventListener("click", () => {
+  if (bgmBox.style.display === "none" || bgmBox.style.display === "") {
+    bgmBox.style.display = "block";
+    loadTracks(); // 열릴 때 트랙 불러오기
+  } else {
+    bgmBox.style.display = "none";
+    stopAudio();
+  }
+});
+
+// ==================== 드래그 이동 ====================
+const bgmHeader = document.getElementById("bgm-header");
+let offsetX_bgm, offsetY_bgm, isDragging_bgm = false;
+
+bgmHeader.addEventListener("mousedown", (e) => {
+  isDragging_bgm = true;
+  offsetX_bgm = e.clientX - bgmBox.offsetLeft;
+  offsetY_bgm = e.clientY - bgmBox.offsetTop;
+});
+
+document.addEventListener("mousemove", (e) => {
+  if (isDragging_bgm) {
+    bgmBox.style.left = (e.clientX - offsetX_bgm) + "px";
+    bgmBox.style.top = (e.clientY - offsetY_bgm) + "px";
+  }
+});
+
+document.addEventListener("mouseup", () => {
+  isDragging_bgm = false;
+});
+
+// ==================== 오디오 플레이어 ====================
+let audio = null;
+let trackList = [];
+let currentIndex = null;
+let isShuffle = false;
+let repeatMode = "all"; // "all", "one", "off"
+let currentTrackId = null; // 현재 재생 중인 곡 ID
+
+// 버튼 상태 업데이트
+function updateButtons(state) {
+  // 컨트롤 영역 버튼
+  if (state === "playing") {
+    document.getElementById("play-btn").style.display = "none";
+    document.getElementById("pause-btn").style.display = "inline-block";
+  } else {
+    document.getElementById("pause-btn").style.display = "none";
+    document.getElementById("play-btn").style.display = "inline-block";
+  }
+
+  // 곡 리스트 버튼
+  const list = document.getElementById("track-list").children;
+  for (let i = 0; i < list.length; i++) {
+    const btn = list[i].querySelector("button");
+    const trackId = parseInt(list[i].getAttribute("data-id"));
+    if (trackId === currentTrackId && state === "playing") {
+      btn.textContent = "⏸";
+    } else {
+      btn.textContent = "▶";
+    }
+  }
+}
+
+function getCheckedTracks() {
+  return trackList.filter(track => track.is_checked);
+}
+
+function playTrack(index) {
+  const checkedTracks = getCheckedTracks();
+  if (checkedTracks.length === 0) return;
+
+  if (audio) audio.pause();
+  currentIndex = index;
+  currentTrackId = checkedTracks[index].id; // 현재 곡 ID 기록
+  lastPlayedTrackId = currentTrackId;
+
+  audio = new Audio(checkedTracks[index].file_url);
+  audio.play();
+
+  updateButtons("playing");
+
+  audio.onloadedmetadata = () => {
+    document.getElementById("total-time").textContent = formatTime(audio.duration);
+  };
+  audio.ontimeupdate = () => {
+    const progress = (audio.currentTime / audio.duration) * 100;
+    document.getElementById("progress-bar").value = progress;
+    document.getElementById("current-time").textContent = formatTime(audio.currentTime);
+  };
+
+  audio.onended = () => {
+    if (repeatMode === "one") {
+      playTrack(currentIndex);
+    } else if (repeatMode === "all") {
+      nextTrack();
+    } else {
+      updateButtons("stopped");
+    }
+  };
+}
+
+
+function pauseTrack() {
+  if (audio) {
+    audio.pause();
+    updateButtons("paused");
+  }
+}
+
+function stopAudio() {
+  if (audio) {
+    audio.pause();
+    audio = null;
+    updateButtons("stopped");
+  }
+}
+
+let lastPlayedIndex = null; // 직전 곡 인덱스 저장
+
+function nextTrack() {
+  const checkedTracks = getCheckedTracks();
+  if (checkedTracks.length === 0) return;
+
+  if (isShuffle) {
+    if (shuffleQueue.length === 0) {
+      generateShuffleQueue(); // 새 셔플 큐 생성
+    }
+    const nextIndex = shuffleQueue.shift(); // 큐에서 하나 꺼내기
+    playTrack(nextIndex);
+  } else {
+    currentIndex = (currentIndex + 1) % checkedTracks.length;
+    playTrack(currentIndex);
+  }
+}
+
+
+function prevTrack() {
+  const checkedTracks = getCheckedTracks();
+  if (checkedTracks.length === 0) return;
+
+  currentIndex = (currentIndex - 1 + checkedTracks.length) % checkedTracks.length;
+  playTrack(currentIndex);
+}
+
+let shuffleQueue = []; // 셔플된 인덱스 배열
+let lastPlayedTrackId = null;
+
+function generateShuffleQueue() {
+  const checkedTracks = getCheckedTracks();
+  shuffleQueue = checkedTracks.map((_, idx) => idx);
+
+  // 직전 곡 제외한 배열 만들기
+  if (lastPlayedTrackId !== null) {
+    shuffleQueue = shuffleQueue.filter(idx => checkedTracks[idx].id !== lastPlayedTrackId);
+  }
+
+  // Fisher-Yates 셔플
+  for (let i = shuffleQueue.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffleQueue[i], shuffleQueue[j]] = [shuffleQueue[j], shuffleQueue[i]];
+  }
+
+  // 직전 곡을 랜덤 위치에 삽입
+  if (lastPlayedTrackId !== null) {
+    const lastIndex = checkedTracks.findIndex(t => t.id === lastPlayedTrackId);
+    const randomPos = Math.floor(Math.random() * (shuffleQueue.length + 1));
+    shuffleQueue.splice(randomPos, 0, lastIndex);
+  }
+}
+
+// ==================== 재생 바 ====================
+document.getElementById("progress-bar").addEventListener("input", (e) => {
+  if (audio) {
+    const seekTime = (e.target.value / 100) * audio.duration;
+    audio.currentTime = seekTime;
+  }
+});
+
+function formatTime(seconds) {
+  if (isNaN(seconds)) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+// ==================== 컨트롤 버튼 ====================
+document.getElementById("shuffle-btn").addEventListener("click", () => {
+  isShuffle = !isShuffle;
+  if (isShuffle) {
+    generateShuffleQueue();
+  } else {
+    shuffleQueue = [];
+  }
+  updateShuffleButton();
+});
+
+document.getElementById("prev-btn").addEventListener("click", prevTrack);
+
+document.getElementById("play-btn").addEventListener("click", () => {
+  if (!audio) {
+    playTrack(currentIndex ?? 0);
+  } else {
+    audio.play();
+    updateButtons("playing");
+  }
+});
+
+document.getElementById("pause-btn").addEventListener("click", () => {
+  pauseTrack();
+});
+
+document.getElementById("next-btn").addEventListener("click", nextTrack);
+
+document.getElementById("repeat-btn").addEventListener("click", () => {
+  if (repeatMode === "all") {
+    repeatMode = "one";   // 한 곡 반복
+  } else if (repeatMode === "one") {
+    repeatMode = "off";   // 반복 꺼짐
+  } else {
+    repeatMode = "all";   // 전체 반복
+  }
+  updateRepeatButton();
+});
+
+// ==================== 트랙 불러오기 ====================
+async function loadTracks() {
+  const token = localStorage.getItem("access_token");
+  const res = await fetch("/timer/tracks", {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  const data = await res.json();
+  trackList = data.tracks;
+
+  const list = document.getElementById("track-list");
+  list.innerHTML = "";
+
+  trackList.forEach((track, idx) => {
+    const div = document.createElement("div");
+    div.classList.add("track-item");
+    div.setAttribute("data-id", track.id);
+
+    // 드래그 핸들 (::)
+    const handle = document.createElement("span");
+    handle.classList.add("drag-handle");
+    handle.textContent = "::";
+
+    // 체크박스
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = track.is_checked;
+    checkbox.addEventListener("change", async () => {
+      track.is_checked = checkbox.checked; // trackList 상태 갱신
+      await fetch(`/timer/traks/${track.id}/check`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ is_checked: checkbox.checked })
+      });
+    });
+
+
+    // 제목
+    const title = document.createElement("span");
+    title.textContent = track.title;
+
+    // 즐겨찾기 별표
+    const star = document.createElement("span");
+    star.classList.add("favorite");
+    star.textContent = track.is_favorite ? "★" : "☆";
+    star.style.color = track.is_favorite ? "gold" : "black";
+    star.addEventListener("click", async () => {
+      const newState = !track.is_favorite;
+      track.is_favorite = newState;
+      star.textContent = newState ? "★" : "☆";
+      star.style.color = newState ? "gold" : "black";
+
+      await fetch(`/timer/traks/${track.id}/favorite`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ is_favorite: newState })
+      });
+    });
+
+    // 재생 버튼
+    const playBtn = document.createElement("button");
+    playBtn.textContent = "▶";
+    playBtn.addEventListener("click", () => {
+      if (currentIndex === idx && audio && !audio.paused) {
+        pauseTrack();
+      } else {
+        // 체크 여부와 상관없이 재생
+        isManualPlay = true;
+        playSpecificTrack(track);
+      }
+    });
+
+function playSpecificTrack(track) {
+  if (audio) audio.pause();
+  currentTrackId = track.id;   // 현재 곡 ID 저장
+  lastPlayedTrackId = currentTrackId;
+
+  audio = new Audio(track.file_url);
+  audio.play();
+  updateButtons("playing");
+
+  audio.onloadedmetadata = () => {
+    document.getElementById("total-time").textContent = formatTime(audio.duration);
+  };
+  audio.ontimeupdate = () => {
+    const progress = (audio.currentTime / audio.duration) * 100;
+    document.getElementById("progress-bar").value = progress;
+    document.getElementById("current-time").textContent = formatTime(audio.currentTime);
+  };
+
+  audio.onended = () => {
+    if (isManualPlay) {
+      // 한 번만 재생하고 끝나면 체크된 곡들로 돌아감
+      isManualPlay = false;
+      if (repeatMode === "all") {
+        nextTrack();
+      } else if (repeatMode === "one") {
+        playSpecificTrack(track); // 같은 곡 반복
+      } else {
+        updateButtons("stopped");
+      }
+    } else {
+      // 기존 로직 (체크된 곡들만)
+      if (repeatMode === "one") {
+        playTrack(currentIndex);
+      } else if (repeatMode === "all") {
+        nextTrack();
+      } else {
+        updateButtons("stopped");
+      }
+    }
+  };
+}
+
+    div.appendChild(handle);
+    div.appendChild(checkbox);
+    div.appendChild(title);
+    div.appendChild(star);
+    div.appendChild(playBtn);
+
+    list.appendChild(div);
+  });
+
+  // 드래그 앤 드롭으로 순서 변경
+  makeListSortable(list);
+}
+
+function makeListSortable(list) {
+  let draggingEl = null;
+  let placeholder = document.createElement("div");
+  placeholder.className = "track-item placeholder";
+  placeholder.style.border = "2px dashed #aaa";
+  placeholder.style.height = "40px";
+
+  list.querySelectorAll(".track-item").forEach(item => {
+    const handle = item.querySelector(".drag-handle");
+
+    handle.addEventListener("mousedown", e => {
+      draggingEl = item;
+      item.classList.add("dragging");
+      list.insertBefore(placeholder, item.nextSibling);
+
+      // 절대 위치로 따라다니게
+      const rect = item.getBoundingClientRect();
+      item.style.width = rect.width + "px";
+      item.style.position = "absolute";
+      item.style.left = rect.left + "px";
+      item.style.top = rect.top + "px";
+      item.style.zIndex = 1000;
+      item.style.pointerEvents = "none";
+
+      e.preventDefault();
+    });
+  });
+
+  document.addEventListener("mousemove", e => {
+    if (draggingEl) {
+      // 드래그 중인 요소 따라다니기
+      draggingEl.style.top = e.clientY - draggingEl.offsetHeight / 2 + "px";
+
+      // placeholder 위치 계산
+      const items = Array.from(list.children).filter(el => el !== draggingEl && el !== placeholder);
+      let target = null;
+      for (let el of items) {
+        const box = el.getBoundingClientRect();
+        if (e.clientY < box.top + box.height / 2) {
+          target = el;
+          break;
+        }
+      }
+      if (target) {
+        list.insertBefore(placeholder, target);
+      } else {
+        list.appendChild(placeholder);
+      }
+    }
+  });
+
+  document.addEventListener("mouseup", async () => {
+    if (draggingEl) {
+      // draggingEl을 placeholder 위치로 되돌리기
+      list.insertBefore(draggingEl, placeholder);
+      draggingEl.classList.remove("dragging");
+      draggingEl.style.position = "";
+      draggingEl.style.top = "";
+      draggingEl.style.left = "";
+      draggingEl.style.width = "";
+      draggingEl.style.zIndex = "";
+      draggingEl.style.pointerEvents = "";
+      placeholder.remove();
+      draggingEl = null;
+
+      // 순서 저장
+      const newOrder = Array.from(list.children).map((el, idx) => ({
+        track_id: parseInt(el.getAttribute("data-id")),
+        order_index: idx + 1
+      }));
+
+      await fetch("/timer/tracks/order", {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(newOrder)
+      });
+    }
+  });
+}
+
+// ==================== 셔플 버튼 ====================
+function updateShuffleButton() {
+  const btn = document.getElementById("shuffle-btn");
+  if (isShuffle) {
+    btn.classList.remove("off");
+  } else {
+    btn.classList.add("off");
+  }
+}
+
+// ==================== 반복 버튼 ====================
+function updateRepeatButton() {
+  const btn = document.getElementById("repeat-btn");
+  btn.classList.remove("off");
+  if (repeatMode === "all") {
+    btn.textContent = "🔁";
+  } else if (repeatMode === "one") {
+    btn.textContent = "🔂";
+  } else {
+    btn.textContent = "🔁";
+    btn.classList.add("off"); // 사선 표시
+  }
+}
+
+// 페이지 로드 시 셔플 버튼 상태 초기화
+updateShuffleButton();
+
 
   </script>
 </body>

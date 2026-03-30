@@ -62,7 +62,7 @@ class MypageResponse(BaseModel):
     goal_minutes: int
     default_focus_time: int
     default_break_time: int
-    ai_mode: str
+    ai_mode: Optional[str] = None
     created_at: str
     experience: int
     level: int
