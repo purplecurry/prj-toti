@@ -118,20 +118,20 @@
     <h1>설정 수정</h1>
 
     <div class="form-group">
-      <label for="goal-minutes">목표 시간 (분)</label>
-      <input type="number" id="goal-minutes" min="1" placeholder="예: 120">
+      <label for="goal-minutes">목표 시간 (분) <span style="color:#aaa; font-size:0.85em;">1~1440</span></label>
+      <input type="number" id="goal-minutes" min="1" max="1440" placeholder="예: 120">
       <span class="error-msg" id="goal-error"></span>
     </div>
 
     <div class="form-group">
-      <label for="focus-time">기본 집중 시간 (분)</label>
-      <input type="number" id="focus-time" min="1" placeholder="예: 25">
+      <label for="focus-time">기본 집중 시간 (분) <span style="color:#aaa; font-size:0.85em;">1~1440</span></label>
+      <input type="number" id="focus-time" min="1" max="1440" placeholder="예: 25">
       <span class="error-msg" id="focus-error"></span>
     </div>
 
     <div class="form-group">
-      <label for="break-time">기본 휴식 시간 (분)</label>
-      <input type="number" id="break-time" min="1" placeholder="예: 5">
+      <label for="break-time">기본 휴식 시간 (분) <span style="color:#aaa; font-size:0.85em;">1~1440</span></label>
+      <input type="number" id="break-time" min="1" max="1440" placeholder="예: 5">
       <span class="error-msg" id="break-error"></span>
     </div>
 
@@ -197,16 +197,16 @@
 
       let valid = true;
 
-      if (!goal_minutes || goal_minutes <= 0) {
-        document.getElementById("goal-error").textContent = "목표 시간은 1분 이상이어야 합니다.";
+      if (!goal_minutes || goal_minutes <= 0 || goal_minutes > 1440) {
+        document.getElementById("goal-error").textContent = "목표 시간은 1분 이상 1440분 이하여야 합니다.";
         valid = false;
       }
-      if (!default_focus_time || default_focus_time <= 0) {
-        document.getElementById("focus-error").textContent = "집중 시간은 1분 이상이어야 합니다.";
+      if (!default_focus_time || default_focus_time <= 0 || default_focus_time > 1440) {
+        document.getElementById("focus-error").textContent = "집중 시간은 1분 이상 1440분 이하여야 합니다.";
         valid = false;
       }
-      if (!default_break_time || default_break_time <= 0) {
-        document.getElementById("break-error").textContent = "휴식 시간은 1분 이상이어야 합니다.";
+      if (!default_break_time || default_break_time <= 0 || default_break_time > 1440) {
+        document.getElementById("break-error").textContent = "휴식 시간은 1분 이상 1440분 이하여야 합니다.";
         valid = false;
       }
 
