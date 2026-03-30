@@ -4,44 +4,46 @@ from sqlalchemy import select, extract
 from db import get_db, StudyRecord
 from user import get_current_user
 from datetime import date
+from pydantic import BaseModel
 
 router = APIRouter()
 stats_router = APIRouter(prefix="/stats")
 
+# 요청 스키마
+class SessionRequest(BaseModel):
+    target_date: date
+    total_minutes: int
+    completed_sessions: int
+
 # 세션 저장
 @router.post("/sessions")
 async def create_session(
-    target_date: date,
-    total_minutes: int,
-    completed_sessions: int,
-    goal_achieved: bool,
+    body: SessionRequest,
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    # 오늘 날짜 기록이 이미 있는지 먼저 확인
     result = await db.execute(
         select(StudyRecord).where(
             StudyRecord.user_id == current_user.id,
-            StudyRecord.date == target_date
+            StudyRecord.date == body.target_date
         )
     )
     record = result.scalars().first()
 
     if record:
-        # 이미 있으면 업데이트
-        record.total_minutes = total_minutes
-        record.completed_sessions = completed_sessions
-        record.goal_achieved = goal_achieved
+        record.total_minutes = min(record.total_minutes + body.total_minutes, 1440)
+        record.completed_sessions += body.completed_sessions
     else:
-        # 없으면 새로 생성
         record = StudyRecord(
             user_id=current_user.id,
-            date=target_date,
-            total_minutes=total_minutes,
-            completed_sessions=completed_sessions,
-            goal_achieved=goal_achieved
+            date=body.target_date,
+            total_minutes=min(body.total_minutes, 1440),
+            completed_sessions=body.completed_sessions,
+            goal_achieved=False
         )
         db.add(record)
+
+    record.goal_achieved = (record.total_minutes >= current_user.goal_minutes)
 
     await db.commit()
     return {"message": "저장 완료"}
