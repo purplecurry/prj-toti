@@ -62,8 +62,10 @@ class MypageResponse(BaseModel):
     goal_minutes: int
     default_focus_time: int
     default_break_time: int
-    ai_mode: str
+    ai_mode: Optional[str] = None
     created_at: str
+    experience: int
+    level: int
 
 
 class SettingsResponse(BaseModel):
@@ -85,6 +87,11 @@ def create_access_token(data: dict) -> str:
     expire = datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def calc_level(exp: int) -> int:
+    # 100분마다 레벨 1 상승, 최초 레벨 1
+    return exp // 100 + 1
 
 
 # --- 의존성: 현재 유저 조회 ---
@@ -181,7 +188,9 @@ async def mypage(user: User = Depends(get_current_user)):
         default_focus_time=user.default_focus_time,
         default_break_time=user.default_break_time,
         ai_mode=user.ai_mode,
-        created_at=user.created_at.isoformat()
+        created_at=user.created_at.isoformat(),
+        experience=user.exp,
+        level=calc_level(user.exp)
     )
 
 
