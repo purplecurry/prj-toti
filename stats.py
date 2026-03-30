@@ -14,11 +14,11 @@ async def create_session(
     target_date: date,
     total_minutes: int,
     completed_sessions: int,
-    goal_achieved: bool,
+    goal_achieved: bool,   # 프론트에서 보내는 값은 참고용
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    # 오늘 날짜 기록이 이미 있는지 먼저 확인
+    # 오늘 날짜 기록이 이미 있는지 확인
     result = await db.execute(
         select(StudyRecord).where(
             StudyRecord.user_id == current_user.id,
@@ -28,23 +28,28 @@ async def create_session(
     record = result.scalars().first()
 
     if record:
-        # 이미 있으면 업데이트
-        record.total_minutes = total_minutes
-        record.completed_sessions = completed_sessions
-        record.goal_achieved = goal_achieved
+        # 누적 업데이트
+        record.total_minutes += total_minutes
+        record.completed_sessions += completed_sessions
     else:
-        # 없으면 새로 생성
+        # 새로 생성
         record = StudyRecord(
             user_id=current_user.id,
             date=target_date,
             total_minutes=total_minutes,
             completed_sessions=completed_sessions,
-            goal_achieved=goal_achieved
+            goal_achieved=False  # 일단 False로 생성
         )
         db.add(record)
 
+    # 목표 달성 여부 자동 계산
+    if record.total_minutes >= current_user.goal_minutes:
+        record.goal_achieved = True
+    else:
+        record.goal_achieved = False
+
     await db.commit()
-    return {"message": "저장 완료"}
+    return {"message": "저장 완료", "goal_achieved": record.goal_achieved}
 
 # 일별 통계
 @stats_router.get("/daily")
