@@ -36,7 +36,6 @@
       text-align: center;
     }
 
-    /* 레벨/경험치 영역 */
     .level-box {
       background: #fdecea;
       border: 1px solid #e57373;
@@ -79,7 +78,6 @@
       transition: width 0.4s ease;
     }
 
-    /* 정보 영역 */
     .info-group {
       display: flex;
       justify-content: space-between;
@@ -236,12 +234,10 @@
 
         const data = await res.json();
 
-        // 경험치 진행도 계산 (100분 = 레벨 1)
         const expInLevel = data.experience % 100;
         const expPercent = expInLevel;
 
         document.getElementById("user-info").innerHTML = `
-          <!-- 레벨/경험치 -->
           <div class="level-box">
             <div class="level-title">현재 레벨</div>
             <div class="level-value">Lv. ${data.level}</div>
@@ -251,25 +247,23 @@
             </div>
           </div>
 
-          <!-- 이메일 -->
           <div class="info-group">
             <span class="info-label">이메일</span>
             <span class="info-value">${data.email}</span>
           </div>
-
-          <!-- 닉네임 -->
           <div class="info-group">
             <span class="info-label">닉네임</span>
             <span class="info-value">${data.nickname}</span>
           </div>
 
-          <!-- 통계 보기 버튼 -->
+          <button class="menu-btn" id="timer-btn">
+            <span>타이머로 이동</span>
+            <span class="arrow">▶</span>
+          </button>
           <button class="menu-btn" id="stats-btn">
             <span>통계 보기</span>
             <span class="arrow">▶</span>
           </button>
-
-          <!-- 설정 버튼 + 토글 패널 -->
           <button class="menu-btn" id="settings-toggle-btn">
             <span>설정</span>
             <span class="arrow">▶</span>
@@ -294,6 +288,10 @@
             <button class="edit-btn" id="go-settings-btn">설정 수정하기</button>
           </div>
         `;
+
+        document.getElementById("timer-btn").addEventListener("click", () => {
+          window.location.href = "/timer";
+        });
 
         document.getElementById("stats-btn").addEventListener("click", () => {
           alert("통계 페이지는 준비 중입니다.");
