@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>마이페이지 - Toti</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -15,9 +16,10 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
       background: #f5f5f5;
       font-family: sans-serif;
+      padding: 40px 0;
     }
 
     .card {
@@ -126,6 +128,60 @@
       transform: rotate(90deg);
     }
 
+    .stats-panel {
+      display: none;
+      background: #f9f9f9;
+      border: 1px solid #eee;
+      border-radius: 6px;
+      padding: 14px 16px;
+      margin-top: 6px;
+      margin-bottom: 6px;
+    }
+
+    .stats-panel.open {
+      display: block;
+    }
+
+    .tab-group {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 7px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: #fff;
+      font-size: 0.85em;
+      cursor: pointer;
+      color: #555;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .tab-btn.active {
+      background: #e57373;
+      color: white;
+      border-color: #e57373;
+    }
+
+    .tab-btn:hover:not(.active) {
+      background: #fdecea;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 180px;
+    }
+
+    .stats-loading {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.85em;
+      padding: 20px 0;
+    }
+
     .settings-panel {
       display: none;
       background: #f9f9f9;
@@ -220,6 +276,118 @@
       window.location.href = "/users/login-page";
     }
 
+    let chartInstance = null;
+
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = today.getMonth() + 1;
+    const dd = today.getDate();
+
+    function getWeekNumber(d) {
+      const date = new Date(d);
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+      const week1 = new Date(date.getFullYear(), 0, 4);
+      return 1 + Math.round(((date - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+    }
+
+    const currentWeek = getWeekNumber(today);
+
+    async function loadStats(tab) {
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.tab === tab);
+      });
+
+      document.getElementById("chart-area").innerHTML = `
+        <div class="stats-loading">불러오는 중...</div>
+      `;
+
+      let labels = [];
+      let values = [];
+
+      try {
+        if (tab === "daily") {
+          const url = `/stats/daily?target_date=${yyyy}-${String(mm).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
+          const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+          const data = await res.json();
+          labels = ["오늘"];
+          // null 또는 total_minutes 없을 때 0으로 처리
+          values = [data && data.total_minutes ? data.total_minutes : 0];
+
+        } else if (tab === "weekly") {
+          const url = `/stats/weekly?year=${yyyy}&week=${currentWeek}`;
+          const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+          const data = await res.json();
+          labels = data.map(d => d.date);
+          values = data.map(d => d.total_minutes ?? 0);
+
+        } else if (tab === "monthly") {
+          const url = `/stats/monthly?year=${yyyy}&month=${mm}`;
+          const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+          const data = await res.json();
+          labels = data.map(d => d.date);
+          values = data.map(d => d.total_minutes ?? 0);
+
+        } else if (tab === "yearly") {
+          const url = `/stats/yearly?year=${yyyy}`;
+          const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+          const data = await res.json();
+          labels = data.map(d => d.date);
+          values = data.map(d => d.total_minutes ?? 0);
+        }
+
+        // 데이터 없을 때
+        if (values.length === 0 || values.every(v => v === 0)) {
+          document.getElementById("chart-area").innerHTML = `
+            <div class="stats-loading">데이터가 없습니다.</div>
+          `;
+          return;
+        }
+
+        document.getElementById("chart-area").innerHTML = `
+          <div class="chart-wrap"><canvas id="stats-chart"></canvas></div>
+        `;
+
+        if (chartInstance) chartInstance.destroy();
+
+        const ctx = document.getElementById("stats-chart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [{
+              label: "학습 시간 (분)",
+              data: values,
+              backgroundColor: "#e57373",
+              borderRadius: 4,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { font: { size: 11 } }
+              },
+              x: {
+                ticks: { font: { size: 11 } }
+              }
+            }
+          }
+        });
+
+      } catch (err) {
+        console.error("통계 불러오기 실패", err);
+        document.getElementById("chart-area").innerHTML = `
+          <div class="stats-loading">통계를 불러올 수 없습니다.</div>
+        `;
+      }
+    }
+
     async function loadMypage() {
       try {
         const res = await fetch("/users/mypage", {
@@ -233,9 +401,7 @@
         }
 
         const data = await res.json();
-
         const expInLevel = data.experience % 100;
-        const expPercent = expInLevel;
 
         document.getElementById("user-info").innerHTML = `
           <div class="level-box">
@@ -243,7 +409,7 @@
             <div class="level-value">Lv. ${data.level}</div>
             <div class="exp-text">경험치 ${expInLevel} / 100</div>
             <div class="progress-bar-wrap">
-              <div class="progress-bar" style="width: ${expPercent}%"></div>
+              <div class="progress-bar" style="width: ${expInLevel}%"></div>
             </div>
           </div>
 
@@ -260,10 +426,23 @@
             <span>타이머로 이동</span>
             <span class="arrow">▶</span>
           </button>
-          <button class="menu-btn" id="stats-btn">
+
+          <button class="menu-btn" id="stats-toggle-btn">
             <span>통계 보기</span>
             <span class="arrow">▶</span>
           </button>
+          <div class="stats-panel" id="stats-panel">
+            <div class="tab-group">
+              <button class="tab-btn active" data-tab="daily">일별</button>
+              <button class="tab-btn" data-tab="weekly">주간</button>
+              <button class="tab-btn" data-tab="monthly">월간</button>
+              <button class="tab-btn" data-tab="yearly">연간</button>
+            </div>
+            <div id="chart-area">
+              <div class="stats-loading">탭을 선택하세요.</div>
+            </div>
+          </div>
+
           <button class="menu-btn" id="settings-toggle-btn">
             <span>설정</span>
             <span class="arrow">▶</span>
@@ -293,8 +472,21 @@
           window.location.href = "/timer";
         });
 
-        document.getElementById("stats-btn").addEventListener("click", () => {
-          alert("통계 페이지는 준비 중입니다.");
+        const statsToggleBtn = document.getElementById("stats-toggle-btn");
+        const statsPanel = document.getElementById("stats-panel");
+
+        statsToggleBtn.addEventListener("click", () => {
+          statsToggleBtn.classList.toggle("open");
+          statsPanel.classList.toggle("open");
+          if (statsPanel.classList.contains("open")) {
+            loadStats("daily");
+          }
+        });
+
+        statsPanel.addEventListener("click", (e) => {
+          if (e.target.classList.contains("tab-btn")) {
+            loadStats(e.target.dataset.tab);
+          }
         });
 
         const settingsToggleBtn = document.getElementById("settings-toggle-btn");
