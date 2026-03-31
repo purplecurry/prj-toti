@@ -46,7 +46,7 @@ async def create_session(
     record.goal_achieved = (record.total_minutes >= current_user.goal_minutes)
 
     await db.commit()
-    return {"message": "저장 완료"}
+    return {"message": "저장 완료", "goal_achieved": record.goal_achieved}
 
 # 일별 통계
 @stats_router.get("/daily")
