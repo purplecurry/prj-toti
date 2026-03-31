@@ -1241,11 +1241,19 @@ function playTrack(index) {
 
   audio.onended = () => {
     if (repeatMode === "one") {
-      playTrack(currentIndex);
+      // 같은 곡 반복
+      playSpecificTrack(track);
     } else if (repeatMode === "all") {
       nextTrack();
     } else {
-      updateButtons("stopped");
+      // repeatMode === "off"
+      if (isManualPlay) {
+        // 한 번만 재생하고 끝나면 체크된 곡들로 돌아감
+        isManualPlay = false;
+        nextTrack(); // 체크된 곡들로 넘어가기
+      } else {
+        updateButtons("stopped");
+      }
     }
   };
 }
@@ -1469,22 +1477,17 @@ function playSpecificTrack(track) {
   };
 
   audio.onended = () => {
-    if (isManualPlay) {
-      // 한 번만 재생하고 끝나면 체크된 곡들로 돌아감
-      isManualPlay = false;
-      if (repeatMode === "all") {
-        nextTrack();
-      } else if (repeatMode === "one") {
-        playSpecificTrack(track); // 같은 곡 반복
-      } else {
-        updateButtons("stopped");
-      }
+    if (repeatMode === "one") {
+      // 같은 곡 반복
+      playSpecificTrack(track);
+    } else if (repeatMode === "all") {
+      nextTrack();
     } else {
-      // 기존 로직 (체크된 곡들만)
-      if (repeatMode === "one") {
-        playTrack(currentIndex);
-      } else if (repeatMode === "all") {
-        nextTrack();
+      // repeatMode === "off"
+      if (isManualPlay) {
+        // 한 번만 재생하고 끝나면 체크된 곡들로 돌아감
+        isManualPlay = false;
+        nextTrack(); // 체크된 곡들로 넘어가기
       } else {
         updateButtons("stopped");
       }

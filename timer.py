@@ -284,7 +284,7 @@ async def update_track_check(track_id: int, body: TrackCheckUpdate,
     return {"message": "체크 업데이트 완료", "track_id": track_id, "is_checked": setting.is_checked}
 
 # 즐겨찾기 상태 변경시 업데이트
-@router.put("/traks/{track_id}/favorite")
+@router.put("/tracks/{track_id}/favorite")
 async def update_track_favorite(track_id: int, body: TrackFavoriteUpdate,
                                 current_user=Depends(get_current_user),
                                 db: AsyncSession=Depends(get_db)):
