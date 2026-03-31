@@ -194,7 +194,7 @@ async def session_end(body:SessionResult, current_user=Depends(get_current_user)
     pomodoro_session.total_duration += body.duration
 
     # 경험치 부분
-    current_user.exp = (current_user.exp or 0) + body.exp
+    current_user.exp = (current_user.exp or 0) + max(0, min(body.exp, 500 ))  # 한 세션 최대 경험치 캡 500으로 설정
     db.add(current_user)
 
     await db.commit()
@@ -260,7 +260,7 @@ async def load_tracks(current_user=Depends(get_current_user), db: AsyncSession=D
     return {"tracks": tracks}
 
 # 체크 상태 변경시 업데이트
-@router.put("/traks/{track_id}/check")
+@router.put("/tracks/{track_id}/check")
 async def update_track_check(track_id: int, body: TrackCheckUpdate,
                              current_user=Depends(get_current_user),
                              db: AsyncSession=Depends(get_db)):

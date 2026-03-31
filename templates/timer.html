@@ -751,6 +751,11 @@ async function loadMemos() {
 
       const endedAt = new Date(); // 종료 시각 기록
 
+      // 디버깅용 로그 출력
+      console.log("focusTime:", focusTime);
+      console.log("totalCount:", totalCount);
+      console.log("breakTime:", breakTime);
+
       // duration = 집중 시간 × 횟수 (분 단위)
       let duration = focusTime * totalCount;
 
@@ -1103,26 +1108,47 @@ function updateLoginButton() {
   // 페이지 로드 시 상태 업데이트
   updateLoginButton();
 
-  async function sendSessionEnd(startedAt, endedAt, duration, exp) {
-    try {
-      const token = localStorage.getItem("access_token");
-      await fetch("/timer/api/session-end", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          started_at: startedAt.toISOString(),
-          ended_at: endedAt.toISOString(),
-          duration: duration,
-          exp: exp
-        })
-      });
-    } catch (err) {
-      console.error("세션 종료 전송 실패", err);
-    }
+async function sendSessionEnd(startedAt, endedAt, duration, exp) {
+  try {
+    const token = localStorage.getItem("access_token");
+    await fetch("/timer/api/session-end", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        started_at: startedAt.toISOString(),
+        ended_at: endedAt.toISOString(),
+        duration: duration,
+        exp: exp
+      })
+    });
+
+    // 세션 종료 후 StudyRecord 업데이트 호출
+    const targetDate = new Date().toISOString().split("T")[0]; // 오늘 날짜
+    const totalMinutes = duration; // 누적 시간 계산 로직에 맞게 수정
+    const completedSessions = 1;   // 이번 세션을 완료했으니 +1
+    const goalAchieved = false;    // 목표 달성 여부는 로직에 맞게 설정
+
+    await fetch("/sessions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        target_date: new Date().toISOString().split("T")[0], // "YYYY-MM-DD"
+        total_minutes: Number(totalMinutes),
+        completed_sessions: Number(completedSessions),
+        goal_achieved: Boolean(goalAchieved)
+      })
+    });
+
+  } catch (err) {
+    console.error("세션 종료 전송 실패", err);
   }
+}
 
 // ==================== BGM 박스 온오프 ====================
 const bgmBox = document.getElementById("bgm-box");
@@ -1380,7 +1406,7 @@ async function loadTracks() {
     checkbox.checked = track.is_checked;
     checkbox.addEventListener("change", async () => {
       track.is_checked = checkbox.checked; // trackList 상태 갱신
-      await fetch(`/timer/traks/${track.id}/check`, {
+      await fetch(`/timer/tracks/${track.id}/check`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -1406,7 +1432,7 @@ async function loadTracks() {
       star.textContent = newState ? "★" : "☆";
       star.style.color = newState ? "gold" : "black";
 
-      await fetch(`/timer/traks/${track.id}/favorite`, {
+      await fetch(`/timer/tracks/${track.id}/favorite`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`,
