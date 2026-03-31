@@ -751,11 +751,6 @@ async function loadMemos() {
 
       const endedAt = new Date(); // 종료 시각 기록
 
-      // 디버깅용 로그 출력
-      console.log("focusTime:", focusTime);
-      console.log("totalCount:", totalCount);
-      console.log("breakTime:", breakTime);
-
       // duration = 집중 시간 × 횟수 (분 단위)
       let duration = focusTime * totalCount;
 
