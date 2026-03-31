@@ -9,10 +9,6 @@ import ai_service, my_calendar, db, timer, user, stats
 async def app_life_span(app: FastAPI):
     async with db.engine.begin() as conn:                  # 종료하면 자동으로 닫힌다.
         await conn.run_sync(db.Base.metadata.create_all)   # 동기 실행 ==> 비동기 실행.
-
-    # 서버 실행시 bgm db에 입력
-    import bgm_import
-    await bgm_import.seed_tracks()
     yield    
 
 app = FastAPI(lifespan=app_life_span)
