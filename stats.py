@@ -4,49 +4,46 @@ from sqlalchemy import select, extract
 from db import get_db, StudyRecord
 from user import get_current_user
 from datetime import date
+from pydantic import BaseModel
 
 router = APIRouter()
 stats_router = APIRouter(prefix="/stats")
 
+# 요청 스키마
+class SessionRequest(BaseModel):
+    target_date: date
+    total_minutes: int
+    completed_sessions: int
+
 # 세션 저장
 @router.post("/sessions")
 async def create_session(
-    target_date: date,
-    total_minutes: int,
-    completed_sessions: int,
-    goal_achieved: bool,   # 프론트에서 보내는 값은 참고용
+    body: SessionRequest,
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    # 오늘 날짜 기록이 이미 있는지 확인
     result = await db.execute(
         select(StudyRecord).where(
             StudyRecord.user_id == current_user.id,
-            StudyRecord.date == target_date
+            StudyRecord.date == body.target_date
         )
     )
     record = result.scalars().first()
 
     if record:
-        # 누적 업데이트
-        record.total_minutes += total_minutes
-        record.completed_sessions += completed_sessions
+        record.total_minutes = min(record.total_minutes + body.total_minutes, 1440)
+        record.completed_sessions += body.completed_sessions
     else:
-        # 새로 생성
         record = StudyRecord(
             user_id=current_user.id,
-            date=target_date,
-            total_minutes=total_minutes,
-            completed_sessions=completed_sessions,
-            goal_achieved=False  # 일단 False로 생성
+            date=body.target_date,
+            total_minutes=min(body.total_minutes, 1440),
+            completed_sessions=body.completed_sessions,
+            goal_achieved=False
         )
         db.add(record)
 
-    # 목표 달성 여부 자동 계산
-    if record.total_minutes >= current_user.goal_minutes:
-        record.goal_achieved = True
-    else:
-        record.goal_achieved = False
+    record.goal_achieved = (record.total_minutes >= current_user.goal_minutes)
 
     await db.commit()
     return {"message": "저장 완료", "goal_achieved": record.goal_achieved}

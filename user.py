@@ -37,9 +37,10 @@ class LoginRequest(BaseModel):
 
 
 class SettingsRequest(BaseModel):
-    goal_minutes: int = Field(gt=0, description="목표 시간 (분, 0보다 커야 함)")
-    default_focus_time: int = Field(gt=0, description="기본 집중 시간 (분, 0보다 커야 함)")
-    default_break_time: int = Field(gt=0, description="기본 휴식 시간 (분, 0보다 커야 함)")
+    # 24시간 = 1440분
+    goal_minutes: int = Field(gt=0, le=1440, description="목표 시간 (분, 0보다 크고 1440 이하)")
+    default_focus_time: int = Field(gt=0, le=1440, description="기본 집중 시간 (분, 0보다 크고 1440 이하)")
+    default_break_time: int = Field(gt=0, le=1440, description="기본 휴식 시간 (분, 0보다 크고 1440 이하)")
     ai_mode: str = Field(description="AI 모드 설정")
 
 
