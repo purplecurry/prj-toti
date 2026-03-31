@@ -1,13 +1,19 @@
 1. 실행방법
-- python bgm-import.py로 bgms 내부의 음원을 db에 등록 (음원 추가시에 다시 실행하면 자동 추가됨 (파일 이름 기준))
-- 이 후 uvicorn으로 main.py 구동
+- docker compose up -d --build 실행
+- docker exec -it toti-app sh -c "python bgm_import.py" 실행하여 bgm파일을 db저장
+- 이 후 docker exec -it toti-db psql -U toti_user -d toti_db -c "SELECT id, title, file_url FROM track;" 실행하여 db저장 확인
   
 2. .env 필요 내용
 - 필수내용
-- DATABASE_URL
-- GOOGLE_API_KEY
+POSTGRES_DB
+POSTGRES_USER
+POSTGRES_PASSWORD
 
-- 테스트용 코드가 포함 된 상태
-- SECRET_KEY
-- ACCESS_TOKEN_EXPIRE_HOURS
+GEMINI_API_KEY
+
+DATABASE_URL
+
+SECRET_KEY
+
+ACCESS_TOKEN_EXPIRE_HOURS=2
 
