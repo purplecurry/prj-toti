@@ -4,12 +4,6 @@ my_db.sqlite
 # from HG
 F/
 
-test_ai_service.py
-ai_test_bar.html
-dockerfile
-
-conftest.py
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
