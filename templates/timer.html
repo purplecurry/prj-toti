@@ -600,7 +600,7 @@
   <!-- 우측 상단 버튼 -->
   <div class="top-right-buttons">
     <!-- 마이페이지 버튼 -->
-    <button class="circle-btn" id="mypage-btn">
+    <button class="circle-btn" id="mypage-btn" title="마이페이지">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
         <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 
                 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 
@@ -608,18 +608,8 @@
       </svg>
     </button>
 
-    <!-- 캘린더 버튼 -->
-    <button class="circle-btn" id="calendar-btn" onclick="location.href='/'">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 
-                .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 
-                2-.9 2-2V6c0-1.1-.9-2-2-2zm0 
-                16H5V9h14v11z"/>
-      </svg>
-    </button>
-
     <!-- 메모 버튼 -->
-    <button class="circle-btn" id="memo-btn">
+    <button class="circle-btn" id="memo-btn" title="메모">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
         <path d="M3 4v16h18V4H3zm16 14H5V6h14v12zM7 
                 8h10v2H7V8zm0 4h10v2H7v-2z"/>
@@ -627,7 +617,7 @@
     </button>
 
     <!-- BGM 버튼 -->
-    <button class="circle-btn" id="bgm-btn">
+    <button class="circle-btn" id="bgm-btn" title="bgm">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
         <path d="M12 3v10.55A4 4 0 1 0 14 
                 17V7h4V3h-6z"/>
@@ -645,7 +635,7 @@
     </button>
 
     <!-- 로그인/로그아웃 버튼 -->
-    <button class="circle-btn" id="login-btn">
+    <button class="circle-btn" id="login-btn" title="로그인">
       <!-- 기본은 로그인 아이콘 -->
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
         <path d="M10 17l5-5-5-5v10zm9-12H9c-1.1 
@@ -1246,6 +1236,7 @@ function updateLoginButton() {
                  2-2V5c0-1.1-.9-2-2-2z"/>
       </svg>
     `;
+    loginBtn.title = "로그아웃";
   } else {
     // 로그아웃 상태 → 로그인 아이콘
     loginBtn.innerHTML = `
@@ -1256,6 +1247,7 @@ function updateLoginButton() {
                  2-2V7c0-1.1-.9-2-2-2z"/>
       </svg>
     `;
+    loginBtn.title = "로그인" ;
   }
 }
 
@@ -1434,7 +1426,10 @@ document.getElementById("ai-submit-btn").addEventListener("click", async () => {
 const bgmBox = document.getElementById("bgm-box");
 const bgmBtn = document.getElementById("bgm-btn");
 
-bgmBtn.addEventListener("click", () => {
+bgmBtn.addEventListener("click", async () => {
+  const loggedIn = await ensureLogin();
+  if (!loggedIn) return;
+
   if (bgmBox.style.display === "none" || bgmBox.style.display === "") {
     bgmBox.style.display = "block";
     loadTracks(); // 열릴 때 트랙 불러오기

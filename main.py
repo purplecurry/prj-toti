@@ -16,7 +16,7 @@ app = FastAPI(lifespan=app_life_span)
 app.mount("/bgms", StaticFiles(directory="bgms"), name="bgms")
 
 app.include_router(timer.router)
-app.include_router(my_calendar.router)
+# app.include_router(my_calendar.router)
 app.include_router(ai_service.router)
 app.include_router(user.router)
 app.include_router(stats.router)
