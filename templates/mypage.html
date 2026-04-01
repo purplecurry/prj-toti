@@ -142,6 +142,20 @@
     }
 
     .info-label { font-size: 0.9em; color: var(--text-sub); }
+    .btn-nickname-edit {
+      padding: 5px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 0.68em;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-sub);
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-nickname-edit:hover { background: var(--tomato-muted); }
+
     .info-value { font-size: 1em; color: var(--text); font-weight: 700; }
 
     .menu-btn {
@@ -221,35 +235,52 @@
       width: 100%;
       padding: 10px;
       margin-top: 12px;
-      background: linear-gradient(135deg, var(--tomato), var(--tomato-dark));
-      color: white;
-      border: none;
+      background: #fff;
+      color: var(--text-sub);
+      border: 1.5px solid var(--border);
       border-radius: 10px;
       font-size: 0.9em;
       font-weight: 700;
       font-family: 'Nunito', sans-serif;
       cursor: pointer;
-      transition: opacity 0.2s;
+      transition: background 0.2s;
     }
 
-    .edit-btn:hover { opacity: 0.9; }
+    .edit-btn:hover { background: var(--tomato-muted); }
 
-    .btn-logout {
-      width: 100%;
+    .btn-bottom-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn-logout, .btn-timer {
+      flex: 1;
       padding: 12px;
-      background: var(--tomato-pale);
-      color: var(--tomato);
-      border: 1.5px solid var(--border);
       border-radius: 10px;
       font-size: 0.95em;
       font-weight: 700;
       font-family: 'Nunito', sans-serif;
       cursor: pointer;
-      margin-top: 20px;
-      transition: background 0.2s;
+      border: 1.5px solid var(--border);
+      transition: background 0.2s, opacity 0.2s;
     }
 
-    .btn-logout:hover { background: var(--tomato-muted); }
+    .btn-logout {
+      background: #f0f0f0;
+      color: #888888;
+      border-color: #e0e0e0;
+    }
+
+    .btn-logout:hover { background: #e4e4e4; }
+
+    .btn-timer {
+      background: linear-gradient(135deg, var(--tomato), var(--tomato-dark));
+      color: white;
+      border-color: transparent;
+    }
+
+    .btn-timer:hover { opacity: 0.9; }
     .loading { text-align: center; color: var(--text-sub); font-size: 0.95em; padding: 20px 0; }
   </style>
 </head>
@@ -261,7 +292,10 @@
       <div class="loading">불러오는 중...</div>
     </div>
 
-    <button class="btn-logout" id="logout-btn">로그아웃</button>
+    <div class="btn-bottom-group">
+      <button class="btn-timer" id="timer-bottom-btn">타이머로 돌아가기</button>
+      <button class="btn-logout" id="logout-btn">로그아웃</button>
+    </div>
   </div>
 
   <script>
@@ -401,7 +435,6 @@
 
         document.getElementById("user-info").innerHTML = `
           <div class="level-box">
-            <div class="level-title">현재 레벨</div>
             <div class="level-value">Lv. ${data.level}</div>
             <div class="exp-text">경험치 ${expInLevel} / 100</div>
             <div class="progress-bar-wrap">
@@ -415,13 +448,14 @@
           </div>
           <div class="info-group">
             <span class="info-label">닉네임</span>
-            <span class="info-value">${data.nickname}</span>
+            <span style="display:flex; align-items:center; gap:8px;">
+              <span class="info-value" id="nickname-display">${data.nickname}</span>
+              <input type="text" id="nickname-input" maxlength="20" style="display:none; padding:4px 8px; border:1.5px solid var(--border); border-radius:8px; font-size:0.95em; font-family:Nunito,sans-serif; width:120px; background:var(--tomato-pale);">
+              <button class="btn-nickname-edit" id="nickname-edit-btn">수정</button>
+              <button class="btn-nickname-edit" id="nickname-save-btn" style="display:none;">저장</button>
+              <button class="btn-nickname-edit" id="nickname-cancel-btn" style="display:none;">취소</button>
+            </span>
           </div>
-
-          <button class="menu-btn" id="timer-btn">
-            <span>타이머로 이동</span>
-            <span class="arrow">▶</span>
-          </button>
 
           <button class="menu-btn" id="stats-toggle-btn">
             <span>통계 보기</span>
@@ -456,15 +490,11 @@
               <span>기본 휴식 시간</span>
               <span>${data.default_break_time}분</span>
             </div>
-            <div class="settings-item">
-              <span>AI 모드</span>
-              <span>${data.ai_mode || "-"}</span>
-            </div>
             <button class="edit-btn" id="go-settings-btn">설정 수정하기</button>
           </div>
         `;
 
-        document.getElementById("timer-btn").addEventListener("click", () => {
+        document.getElementById("timer-bottom-btn").addEventListener("click", () => {
           window.location.href = "/timer";
         });
 
@@ -495,6 +525,60 @@
 
         document.getElementById("go-settings-btn").addEventListener("click", () => {
           window.location.href = "/users/settings-page";
+        });
+
+        const nicknameDisplay = document.getElementById("nickname-display");
+        const nicknameInput = document.getElementById("nickname-input");
+        const editBtn = document.getElementById("nickname-edit-btn");
+        const saveBtn = document.getElementById("nickname-save-btn");
+        const cancelBtn = document.getElementById("nickname-cancel-btn");
+
+        editBtn.addEventListener("click", () => {
+          nicknameInput.value = nicknameDisplay.textContent;
+          nicknameDisplay.style.display = "none";
+          nicknameInput.style.display = "inline-block";
+          editBtn.style.display = "none";
+          saveBtn.style.display = "inline-block";
+          cancelBtn.style.display = "inline-block";
+          nicknameInput.focus();
+        });
+
+        cancelBtn.addEventListener("click", () => {
+          nicknameDisplay.style.display = "inline-block";
+          nicknameInput.style.display = "none";
+          editBtn.style.display = "inline-block";
+          saveBtn.style.display = "none";
+          cancelBtn.style.display = "none";
+        });
+
+        saveBtn.addEventListener("click", async () => {
+          const newNickname = nicknameInput.value.trim();
+          if (!newNickname || newNickname.length > 20) {
+            alert("닉네임은 1~20자 사이여야 합니다.");
+            return;
+          }
+          try {
+            const res = await fetch("/users/nickname", {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({ nickname: newNickname })
+            });
+            if (res.ok) {
+              nicknameDisplay.textContent = newNickname;
+              nicknameDisplay.style.display = "inline-block";
+              nicknameInput.style.display = "none";
+              editBtn.style.display = "inline-block";
+              saveBtn.style.display = "none";
+              cancelBtn.style.display = "none";
+            } else {
+              alert("닉네임 변경에 실패했습니다.");
+            }
+          } catch (err) {
+            alert("서버와 연결할 수 없습니다.");
+          }
         });
 
       } catch (err) {

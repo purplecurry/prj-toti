@@ -161,15 +161,6 @@
       <span class="error-msg" id="break-error"></span>
     </div>
 
-    <div class="form-group">
-      <label for="ai-mode">AI 모드</label>
-      <select id="ai-mode">
-        <option value="">선택 안 함</option>
-        <option value="집중 모드">집중 모드</option>
-        <option value="휴식 모드">휴식 모드</option>
-        <option value="학습 모드">학습 모드</option>
-      </select>
-    </div>
 
     <div class="btn-group">
       <button class="btn btn-primary" id="save-btn">저장</button>
@@ -202,7 +193,6 @@
         document.getElementById("goal-minutes").value = data.goal_minutes;
         document.getElementById("focus-time").value = data.default_focus_time;
         document.getElementById("break-time").value = data.default_break_time;
-        document.getElementById("ai-mode").value = data.ai_mode || "";
       } catch (err) {
         console.error("설정 불러오기 실패", err);
       }
@@ -219,7 +209,6 @@
       const goal_minutes = parseInt(document.getElementById("goal-minutes").value);
       const default_focus_time = parseInt(document.getElementById("focus-time").value);
       const default_break_time = parseInt(document.getElementById("break-time").value);
-      const ai_mode = document.getElementById("ai-mode").value;
 
       let valid = true;
 
@@ -245,7 +234,7 @@
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
           },
-          body: JSON.stringify({ goal_minutes, default_focus_time, default_break_time, ai_mode })
+          body: JSON.stringify({ goal_minutes, default_focus_time, default_break_time })
         });
 
         const data = await res.json();
