@@ -14,6 +14,7 @@ async def app_life_span(app: FastAPI):
 app = FastAPI(lifespan=app_life_span)
 
 app.mount("/bgms", StaticFiles(directory="bgms"), name="bgms")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.include_router(timer.router)
 # app.include_router(my_calendar.router)
