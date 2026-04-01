@@ -1405,7 +1405,20 @@ document.getElementById("ai-submit-btn").addEventListener("click", async () => {
     const fitLabels = { exact: "딱 맞음", under: "여유 있음", over: "조금 길음" };
 
     data.recommendations.forEach(rec => {
-      const longBreakText = rec.long_break_included ? " · 긴 휴식 포함" : "";
+      // schedule에서 긴 휴식이 몇 번째 공부 세션 뒤에 오는지 계산
+      let longBreakInfo = "";
+      if (rec.long_break_included && rec.schedule) {
+        const longBreakPositions = [];
+        let studyCount = 0;
+        rec.schedule.forEach(item => {
+          if (item.type === "study") studyCount++;
+          if (item.type === "long_break") longBreakPositions.push(studyCount);
+        });
+        if (longBreakPositions.length > 0) {
+          longBreakInfo = `긴 휴식 30분 (${longBreakPositions.join(", ")}세션 후)<br>`;
+        }
+      }
+
       const card = document.createElement("div");
       card.className = "ai-plan-card";
       card.innerHTML = `
@@ -1413,7 +1426,7 @@ document.getElementById("ai-submit-btn").addEventListener("click", async () => {
         <div class="ai-plan-title">${rec.pattern_label}</div>
         <div class="ai-plan-detail">
           집중 ${rec.study_minutes}분 · 휴식 ${rec.short_break_minutes}분 · ${rec.num_sessions}세션<br>
-          ${rec.long_break_included ? `긴 휴식 30분 포함<br>` : ""}총 ${rec.total_minutes}분
+          ${longBreakInfo}총 ${rec.total_minutes}분
         </div>
       `;
       planList.appendChild(card);
