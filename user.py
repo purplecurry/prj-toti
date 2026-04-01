@@ -28,6 +28,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6, description="비밀번호 (최소 6자)")
+    nickname: str = Field(min_length=1, max_length=20, description="닉네임 (1~20자)")
 
 
 class LoginRequest(BaseModel):
@@ -40,7 +41,6 @@ class SettingsRequest(BaseModel):
     goal_minutes: int = Field(gt=0, le=1440, description="목표 시간 (분, 0보다 크고 1440 이하)")
     default_focus_time: int = Field(gt=0, le=1440, description="기본 집중 시간 (분, 0보다 크고 1440 이하)")
     default_break_time: int = Field(gt=0, le=1440, description="기본 휴식 시간 (분, 0보다 크고 1440 이하)")
-    nickname: str = Field(min_length=1, max_length=20, description="닉네임 (1~20자)")
 
 
 # --- Pydantic 응답 스키마 ---
@@ -216,5 +216,6 @@ async def update_nickname(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    user.nickname = body.nickname
     await db.commit()
     return SettingsResponse(message="nickname updated")
