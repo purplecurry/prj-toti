@@ -1413,7 +1413,7 @@ document.getElementById("ai-submit-btn").addEventListener("click", async () => {
         <div class="ai-plan-title">${rec.pattern_label}</div>
         <div class="ai-plan-detail">
           집중 ${rec.study_minutes}분 · 휴식 ${rec.short_break_minutes}분 · ${rec.num_sessions}세션<br>
-          총 ${rec.total_minutes}분${longBreakText}
+          ${rec.long_break_included ? `긴 휴식 30분 포함<br>` : ""}총 ${rec.total_minutes}분
         </div>
       `;
       planList.appendChild(card);
