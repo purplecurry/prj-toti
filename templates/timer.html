@@ -1515,8 +1515,7 @@ async function sendSessionEnd(startedAt, endedAt, duration, exp) {
       body: JSON.stringify({
         target_date: new Date().toISOString().split("T")[0], // "YYYY-MM-DD"
         total_minutes: Number(totalMinutes),
-        completed_sessions: Number(completedSessions),
-        goal_achieved: Boolean(goalAchieved)
+        completed_sessions: Number(completedSessions)
       })
     });
 
