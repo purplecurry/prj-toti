@@ -952,40 +952,39 @@ async function loadMemos() {
     // 우상단 버튼들
 
     // 버튼 요소 가져오기
-    const mypageBtn = document.querySelector(".top-right-buttons .circle-btn:nth-child(1)");
-    const calendarBtn = document.querySelector(".top-right-buttons .circle-btn:nth-child(2)");
-    const memoToggleBtn = document.querySelector(".top-right-buttons .circle-btn:nth-child(3)");
+    const mypageBtn = document.getElementById("mypage-btn");
+    const memoToggleBtn = document.getElementById("memo-btn");
     const memoBox = document.getElementById("memo-box");
 
-// 공통 로그인 체크 함수
-async function ensureLogin() {
-  try {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      const goLogin = confirm("로그인이 필요합니다");
-      if (goLogin) window.location.href = "/users/login-page";
-      return false;
-    }
+    // 공통 로그인 체크 함수
+    async function ensureLogin() {
+      try {
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+          const goLogin = confirm("로그인이 필요합니다");
+          if (goLogin) window.location.href = "/users/login-page";
+          return false;
+        }
 
-    const res = await fetch("/timer/api/timer-data", {
-      headers: {
-        "Authorization": `Bearer ${token}`
+        const res = await fetch("/timer/api/timer-data", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) {
+          const goLogin = confirm("로그인이 필요합니다");
+          if (goLogin) window.location.href = "/users/login-page";
+          return false;
+        }
+
+        return true; // 로그인 성공
+      } catch (err) {
+        console.error("서버 연결 실패", err);
+        alert("서버와 연결할 수 없습니다.");
+        return false;
       }
-    });
-
-    if (!res.ok) {
-      const goLogin = confirm("로그인이 필요합니다");
-      if (goLogin) window.location.href = "/users/login-page";
-      return false;
     }
-
-    return true; // 로그인 성공
-  } catch (err) {
-    console.error("서버 연결 실패", err);
-    alert("서버와 연결할 수 없습니다.");
-    return false;
-  }
-}
 
     // 마이페이지 버튼
     mypageBtn.addEventListener("click", async () => {
@@ -994,12 +993,6 @@ async function ensureLogin() {
       window.location.href = "/users/mypage-page";
     });
 
-    // 캘린더 버튼
-    calendarBtn.addEventListener("click", async () => {
-      const loggedIn = await ensureLogin();
-      if (!loggedIn) return;
-      window.location.href = "/calendar";
-    });
 
     // 메모 버튼
     memoToggleBtn.addEventListener("click", async () => {
