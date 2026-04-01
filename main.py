@@ -22,7 +22,6 @@ app.include_router(user.router)
 app.include_router(stats.router)
 app.include_router(stats.stats_router)
 
-
 @app.get("/")
 async def root():
     return RedirectResponse(url="/timer")
