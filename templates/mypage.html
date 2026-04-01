@@ -6,68 +6,121 @@
   <title>마이페이지 - Toti</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    /* ===== 토마토 테마 CSS 변수 ===== */
+    :root {
+      --tomato:       #e53935;
+      --tomato-light: #ef9a9a;
+      --tomato-dark:  #b71c1c;
+      --tomato-pale:  #fff8f7;
+      --tomato-muted: #ffcdd2;
+      --green:        #4caf50;
+      --bg:           #fff3f0;
+      --card:         #ffffff;
+      --text:         #2d2d2d;
+      --text-sub:     #888888;
+      --border:       #f5c6c0;
+      --shadow:       rgba(229, 57, 53, 0.12);
     }
+
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      background: #f5f5f5;
-      font-family: sans-serif;
-      padding: 40px 0;
+      font-family: 'Nunito', sans-serif;
+      color: var(--text);
+      background-color: var(--bg);
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='187' height='187' viewBox='0 0 187 187'%3E%3Cg transform='translate(94,105) rotate(30)'%3E%3Ccircle cx='0' cy='0' r='20' fill='%23e5393520'/%3E%3Cellipse cx='0' cy='-22' rx='3' ry='7' fill='%234caf5025'/%3E%3Cellipse cx='-9' cy='-19' rx='7' ry='3' fill='%234caf5025' transform='rotate(-30 -9 -19)'/%3E%3Cellipse cx='9' cy='-19' rx='7' ry='3' fill='%234caf5025' transform='rotate(30 9 -19)'/%3E%3C/g%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='187' height='187' viewBox='0 0 187 187'%3E%3Cg transform='translate(94,105) rotate(30)'%3E%3Ccircle cx='0' cy='0' r='20' fill='%23e5393520'/%3E%3Cellipse cx='0' cy='-22' rx='3' ry='7' fill='%234caf5025'/%3E%3Cellipse cx='-9' cy='-19' rx='7' ry='3' fill='%234caf5025' transform='rotate(-30 -9 -19)'/%3E%3Cellipse cx='9' cy='-19' rx='7' ry='3' fill='%234caf5025' transform='rotate(30 9 -19)'/%3E%3C/g%3E%3C/svg%3E");
+      background-position: 0 94px, 94px 0;
+      background-repeat: repeat;
+      background-size: 187px 187px;
+      padding: 40px 16px;
     }
 
     .card {
-      background: #ffffff;
-      border: 1px solid #ccc;
-      border-radius: 6px;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
       padding: 40px 36px;
-      width: 400px;
-      box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 8px 32px var(--shadow);
+      position: relative;
+      z-index: 1;
+      width: 480px;
+      max-width: 95vw;
     }
 
     h1 {
       font-size: 1.6em;
-      color: #333;
+      font-weight: 800;
+      color: var(--tomato-dark);
       margin-bottom: 28px;
       text-align: center;
     }
 
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      font-size: 0.9em;
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+
+    input, select {
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 1em;
+      background: var(--tomato-pale);
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      transition: border 0.2s, background 0.2s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--tomato);
+      background: #fff;
+    }
+
+    .error-msg {
+      font-size: 0.8em;
+      color: var(--tomato);
+      min-height: 16px;
+    }
+
+    .success-msg {
+      font-size: 0.85em;
+      color: var(--green);
+      text-align: center;
+      min-height: 18px;
+      margin-top: 8px;
+    }
     .level-box {
-      background: #fdecea;
-      border: 1px solid #e57373;
-      border-radius: 6px;
+      background: linear-gradient(135deg, #fff0ef, #fdecea);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
       padding: 14px 16px;
       margin-bottom: 20px;
       text-align: center;
     }
 
-    .level-title {
-      font-size: 0.85em;
-      color: #e57373;
-      margin-bottom: 4px;
-    }
-
-    .level-value {
-      font-size: 1.8em;
-      font-weight: bold;
-      color: #e57373;
-      margin-bottom: 10px;
-    }
-
-    .exp-text {
-      font-size: 0.85em;
-      color: #777;
-      margin-bottom: 6px;
-    }
+    .level-title { font-size: 0.85em; color: var(--tomato); margin-bottom: 4px; font-weight: 700; }
+    .level-value { font-size: 1.8em; font-weight: 800; color: var(--tomato-dark); margin-bottom: 10px; }
+    .exp-text { font-size: 0.85em; color: var(--text-sub); margin-bottom: 6px; }
 
     .progress-bar-wrap {
-      background: #f0f0f0;
+      background: var(--tomato-muted);
       border-radius: 999px;
       height: 10px;
       overflow: hidden;
@@ -75,7 +128,7 @@
 
     .progress-bar {
       height: 100%;
-      background: #e57373;
+      background: linear-gradient(90deg, var(--tomato), var(--tomato-dark));
       border-radius: 999px;
       transition: width 0.4s ease;
     }
@@ -85,19 +138,11 @@
       justify-content: space-between;
       align-items: center;
       padding: 12px 0;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid var(--border);
     }
 
-    .info-label {
-      font-size: 0.9em;
-      color: #777;
-    }
-
-    .info-value {
-      font-size: 1em;
-      color: #333;
-      font-weight: bold;
-    }
+    .info-label { font-size: 0.9em; color: var(--text-sub); }
+    .info-value { font-size: 1em; color: var(--text); font-weight: 700; }
 
     .menu-btn {
       width: 100%;
@@ -106,155 +151,106 @@
       align-items: center;
       padding: 14px 0;
       border: none;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid var(--border);
       background: none;
       cursor: pointer;
       font-size: 1em;
-      color: #333;
+      font-family: 'Nunito', sans-serif;
+      color: var(--text);
+      font-weight: 600;
       transition: color 0.2s;
     }
 
-    .menu-btn:hover {
-      color: #e57373;
-    }
+    .menu-btn:hover { color: var(--tomato); }
+    .menu-btn .arrow { font-size: 0.85em; color: var(--tomato-light); transition: transform 0.2s; }
+    .menu-btn.open .arrow { transform: rotate(90deg); }
 
-    .menu-btn .arrow {
-      font-size: 0.85em;
-      color: #aaa;
-      transition: transform 0.2s;
-    }
-
-    .menu-btn.open .arrow {
-      transform: rotate(90deg);
-    }
-
-    .stats-panel {
+    .stats-panel, .settings-panel {
       display: none;
-      background: #f9f9f9;
-      border: 1px solid #eee;
-      border-radius: 6px;
+      background: var(--tomato-pale);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
       padding: 14px 16px;
       margin-top: 6px;
       margin-bottom: 6px;
     }
 
-    .stats-panel.open {
-      display: block;
-    }
+    .stats-panel.open, .settings-panel.open { display: block; }
 
-    .tab-group {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 14px;
-    }
+    .tab-group { display: flex; gap: 6px; margin-bottom: 14px; }
 
     .tab-btn {
       flex: 1;
       padding: 7px 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
       background: #fff;
       font-size: 0.85em;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 600;
       cursor: pointer;
-      color: #555;
+      color: var(--text-sub);
       transition: background 0.2s, color 0.2s;
     }
 
     .tab-btn.active {
-      background: #e57373;
+      background: linear-gradient(135deg, var(--tomato), var(--tomato-dark));
       color: white;
-      border-color: #e57373;
+      border-color: var(--tomato);
     }
 
-    .tab-btn:hover:not(.active) {
-      background: #fdecea;
-    }
+    .tab-btn:hover:not(.active) { background: var(--tomato-muted); }
 
-    .chart-wrap {
-      position: relative;
-      height: 180px;
-    }
-
-    .stats-loading {
-      text-align: center;
-      color: #aaa;
-      font-size: 0.85em;
-      padding: 20px 0;
-    }
-
-    .settings-panel {
-      display: none;
-      background: #f9f9f9;
-      border: 1px solid #eee;
-      border-radius: 6px;
-      padding: 14px 16px;
-      margin-top: 6px;
-      margin-bottom: 6px;
-    }
-
-    .settings-panel.open {
-      display: block;
-    }
+    .chart-wrap { position: relative; height: 180px; }
+    .stats-loading { text-align: center; color: var(--text-sub); font-size: 0.85em; padding: 20px 0; }
 
     .settings-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 8px 0;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid var(--border);
       font-size: 0.9em;
-      color: #555;
+      color: var(--text-sub);
     }
 
-    .settings-item:last-of-type {
-      border-bottom: none;
-    }
-
-    .settings-item span:last-child {
-      font-weight: bold;
-      color: #333;
-    }
+    .settings-item:last-of-type { border-bottom: none; }
+    .settings-item span:last-child { font-weight: 700; color: var(--text); }
 
     .edit-btn {
       width: 100%;
       padding: 10px;
       margin-top: 12px;
-      background: #e57373;
+      background: linear-gradient(135deg, var(--tomato), var(--tomato-dark));
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 10px;
       font-size: 0.9em;
+      font-weight: 700;
+      font-family: 'Nunito', sans-serif;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: opacity 0.2s;
     }
 
-    .edit-btn:hover {
-      background: #ef9a9a;
-    }
+    .edit-btn:hover { opacity: 0.9; }
 
     .btn-logout {
       width: 100%;
       padding: 12px;
-      background: #f0f0f0;
-      color: #e57373;
-      border: 1px solid #e57373;
-      border-radius: 6px;
+      background: var(--tomato-pale);
+      color: var(--tomato);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
       font-size: 0.95em;
+      font-weight: 700;
+      font-family: 'Nunito', sans-serif;
       cursor: pointer;
       margin-top: 20px;
       transition: background 0.2s;
     }
 
-    .btn-logout:hover {
-      background: #fdecea;
-    }
-
-    .loading {
-      text-align: center;
-      color: #aaa;
-      font-size: 0.95em;
-      padding: 20px 0;
-    }
+    .btn-logout:hover { background: var(--tomato-muted); }
+    .loading { text-align: center; color: var(--text-sub); font-size: 0.95em; padding: 20px 0; }
   </style>
 </head>
 <body>
