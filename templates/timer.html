@@ -644,7 +644,7 @@
   <!-- 우측 상단 버튼 -->
   <div class="top-right-buttons">
     <!-- 마이페이지 버튼 -->
-    <button class="circle-btn" id="mypage-btn">
+    <button class="circle-btn" id="mypage-btn" title="마이페이지">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
         <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 
                 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 
@@ -652,22 +652,8 @@
       </svg>
     </button>
 
-    <!-- 캘린더 버튼 -->
-<<<<<<< Updated upstream
-    <button class="circle-btn" id="calendar-btn" onclick="location.href='/'">
-=======
-    <button class="circle-btn" id="calendar-btn">
->>>>>>> Stashed changes
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 
-                .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 
-                2-.9 2-2V6c0-1.1-.9-2-2-2zm0 
-                16H5V9h14v11z"/>
-      </svg>
-    </button>
-
     <!-- 메모 버튼 -->
-    <button class="circle-btn" id="memo-btn">
+    <button class="circle-btn" id="memo-btn" title="메모">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
         <path d="M3 4v16h18V4H3zm16 14H5V6h14v12zM7 
                 8h10v2H7V8zm0 4h10v2H7v-2z"/>
@@ -675,7 +661,7 @@
     </button>
 
     <!-- BGM 버튼 -->
-    <button class="circle-btn" id="bgm-btn">
+    <button class="circle-btn" id="bgm-btn" title="bgm">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
         <path d="M12 3v10.55A4 4 0 1 0 14 
                 17V7h4V3h-6z"/>
@@ -683,7 +669,7 @@
     </button>
 
     <!-- 로그인/로그아웃 버튼 -->
-    <button class="circle-btn" id="login-btn">
+    <button class="circle-btn" id="login-btn" title="로그인">
       <!-- 기본은 로그인 아이콘 -->
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
         <path d="M10 17l5-5-5-5v10zm9-12H9c-1.1 
@@ -1008,40 +994,39 @@ async function loadMemos() {
     // 우상단 버튼들
 
     // 버튼 요소 가져오기
-    const mypageBtn = document.querySelector(".top-right-buttons .circle-btn:nth-child(1)");
-    const calendarBtn = document.querySelector(".top-right-buttons .circle-btn:nth-child(2)");
-    const memoToggleBtn = document.querySelector(".top-right-buttons .circle-btn:nth-child(3)");
+    const mypageBtn = document.getElementById("mypage-btn");
+    const memoToggleBtn = document.getElementById("memo-btn");
     const memoBox = document.getElementById("memo-box");
 
-// 공통 로그인 체크 함수
-async function ensureLogin() {
-  try {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      const goLogin = confirm("로그인이 필요합니다");
-      if (goLogin) window.location.href = "/users/login-page";
-      return false;
-    }
+    // 공통 로그인 체크 함수
+    async function ensureLogin() {
+      try {
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+          const goLogin = confirm("로그인이 필요합니다");
+          if (goLogin) window.location.href = "/users/login-page";
+          return false;
+        }
 
-    const res = await fetch("/timer/api/timer-data", {
-      headers: {
-        "Authorization": `Bearer ${token}`
+        const res = await fetch("/timer/api/timer-data", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) {
+          const goLogin = confirm("로그인이 필요합니다");
+          if (goLogin) window.location.href = "/users/login-page";
+          return false;
+        }
+
+        return true; // 로그인 성공
+      } catch (err) {
+        console.error("서버 연결 실패", err);
+        alert("서버와 연결할 수 없습니다.");
+        return false;
       }
-    });
-
-    if (!res.ok) {
-      const goLogin = confirm("로그인이 필요합니다");
-      if (goLogin) window.location.href = "/users/login-page";
-      return false;
     }
-
-    return true; // 로그인 성공
-  } catch (err) {
-    console.error("서버 연결 실패", err);
-    alert("서버와 연결할 수 없습니다.");
-    return false;
-  }
-}
 
     // 마이페이지 버튼
     mypageBtn.addEventListener("click", async () => {
@@ -1050,12 +1035,6 @@ async function ensureLogin() {
       window.location.href = "/users/mypage-page";
     });
 
-    // 캘린더 버튼
-    calendarBtn.addEventListener("click", async () => {
-      const loggedIn = await ensureLogin();
-      if (!loggedIn) return;
-      window.location.href = "/calendar";
-    });
 
     // 메모 버튼
     memoToggleBtn.addEventListener("click", async () => {
@@ -1292,6 +1271,7 @@ function updateLoginButton() {
                  2-2V5c0-1.1-.9-2-2-2z"/>
       </svg>
     `;
+    loginBtn.title = "로그아웃";
   } else {
     // 로그아웃 상태 → 로그인 아이콘
     loginBtn.innerHTML = `
@@ -1302,6 +1282,7 @@ function updateLoginButton() {
                  2-2V7c0-1.1-.9-2-2-2z"/>
       </svg>
     `;
+    loginBtn.title = "로그인" ;
   }
 }
 
@@ -1452,7 +1433,20 @@ document.getElementById("ai-submit-btn").addEventListener("click", async () => {
     const fitLabels = { exact: "딱 맞음", under: "여유 있음", over: "조금 길음" };
 
     data.recommendations.forEach(rec => {
-      const longBreakText = rec.long_break_included ? " · 긴 휴식 포함" : "";
+      // schedule에서 긴 휴식이 몇 번째 공부 세션 뒤에 오는지 계산
+      let longBreakInfo = "";
+      if (rec.long_break_included && rec.schedule) {
+        const longBreakPositions = [];
+        let studyCount = 0;
+        rec.schedule.forEach(item => {
+          if (item.type === "study") studyCount++;
+          if (item.type === "long_break") longBreakPositions.push(studyCount);
+        });
+        if (longBreakPositions.length > 0) {
+          longBreakInfo = `긴 휴식 30분 (${longBreakPositions.join(", ")}세션 후)<br>`;
+        }
+      }
+
       const card = document.createElement("div");
       card.className = "ai-plan-card";
       card.innerHTML = `
@@ -1460,7 +1454,7 @@ document.getElementById("ai-submit-btn").addEventListener("click", async () => {
         <div class="ai-plan-title">${rec.pattern_label}</div>
         <div class="ai-plan-detail">
           집중 ${rec.study_minutes}분 · 휴식 ${rec.short_break_minutes}분 · ${rec.num_sessions}세션<br>
-          ${rec.long_break_included ? `긴 휴식 30분 포함<br>` : ""}총 ${rec.total_minutes}분
+          ${longBreakInfo}총 ${rec.total_minutes}분
         </div>
       `;
       planList.appendChild(card);
@@ -1483,7 +1477,10 @@ document.getElementById("ai-submit-btn").addEventListener("click", async () => {
 const bgmBox = document.getElementById("bgm-box");
 const bgmBtn = document.getElementById("bgm-btn");
 
-bgmBtn.addEventListener("click", () => {
+bgmBtn.addEventListener("click", async () => {
+  const loggedIn = await ensureLogin();
+  if (!loggedIn) return;
+
   if (bgmBox.style.display === "none" || bgmBox.style.display === "") {
     bgmBox.style.display = "block";
     loadTracks(); // 열릴 때 트랙 불러오기
