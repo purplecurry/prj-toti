@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+# from typing import Optional
 from datetime import datetime, timedelta, timezone
 import os
 
@@ -15,7 +15,7 @@ from db import get_db, User
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-fallback-key")
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", 2))
 
