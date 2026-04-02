@@ -337,9 +337,19 @@
       right: 20px;
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 12px;
       z-index: 2000;
     }
+
+    .toti-logo {
+      width: 150px;
+      height: auto;
+      display: block;
+      margin-bottom: 6px;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
+      pointer-events: none;
+}
 
     .circle-btn {
       width: 50px;
@@ -703,6 +713,7 @@
   display: none;
 }
 
+
 @keyframes petalFall {
   0% {
     transform: translateY(0) rotate(0deg) translateX(0);
@@ -807,8 +818,10 @@
   <!-- 페이지 래퍼 시작 -->
   <div class="page-wrapper">
 
+
   <!-- 우측 상단 버튼 -->
   <div class="top-right-buttons">
+    <img class="toti-logo" src="/static/toti-logo.png" alt="Toti 로고">
     <!-- 마이페이지 버튼 -->
     <button class="circle-btn" id="mypage-btn" title="마이페이지">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
